@@ -9,7 +9,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _selectedIndex = 2; // Home selected by default
 
   // ── Tareas de ejemplo ──────────────────────────────────────────────────────
   final List<Map<String, dynamic>> _todayTasks = [
@@ -435,56 +434,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               )),
         ],
-      ),
-    );
-  }
-
-  Widget _buildBottomNav() {
-    final icons = [
-      Icons.calendar_today_outlined,
-      Icons.check_circle_outline,
-      Icons.home_rounded,
-      Icons.notifications_outlined,
-      Icons.settings_outlined,
-    ];
-
-    return Container(
-      height: 70,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 16,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: List.generate(icons.length, (i) {
-          final isSelected = i == _selectedIndex;
-          return GestureDetector(
-            onTap: () => setState(() => _selectedIndex = i),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.all(10),
-              decoration: isSelected
-                  ? BoxDecoration(
-                      color: const Color(0xFF5B8DEF).withOpacity(0.12),
-                      shape: BoxShape.circle,
-                    )
-                  : null,
-              child: Icon(
-                icons[i],
-                color: isSelected
-                    ? const Color(0xFF3A3A9F)
-                    : const Color(0xFFBDBDBD),
-                size: isSelected ? 28 : 24,
-              ),
-            ),
-          );
-        }),
       ),
     );
   }

@@ -6,6 +6,7 @@ import 'tasks_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Future.delayed(Duration.zero);
   runApp(
     ChangeNotifierProvider(
       create: (_) => TaskProvider()..loadTasks(),
