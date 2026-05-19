@@ -1,5 +1,7 @@
-import 'package:flutter/material.dart';
+// lib/screens/home_screen.dart
 
+import 'dart:async';
+import 'package:flutter/material.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -10,12 +12,31 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
 
+  // ── Timer para el reloj en tiempo real ────────────────────────────────────
+  late Timer _timer;
+
   // ── Tareas de ejemplo ──────────────────────────────────────────────────────
   final List<Map<String, dynamic>> _todayTasks = [
     {'title': 'Hacer ejercicio', 'status': 'done'},
     {'title': 'Terminar proyecto', 'status': 'warning'},
     {'title': 'Revisar informes', 'status': 'urgent'},
   ];
+
+  // ── Ciclo de vida ──────────────────────────────────────────────────────────
+  @override
+  void initState() {
+    super.initState();
+    // Actualiza la pantalla cada segundo para que el reloj sea en tiempo real
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel(); // Cancela el timer al salir para evitar fugas de memoria
+    super.dispose();
+  }
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   Color _statusColor(String status) {
@@ -52,10 +73,7 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // ── App Bar ────────────────────────────────────────────────────
             _buildAppBar(),
-
-            // ── Scrollable content ─────────────────────────────────────────
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -76,8 +94,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
-
-      // ── FAB ────────────────────────────────────────────────────────────────
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           // TODO: add new task
@@ -93,9 +109,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildAppBar() {
     return Container(
-      decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 151, 217, 238),
-        borderRadius: const BorderRadius.only(
+      decoration: const BoxDecoration(
+        color: Color.fromARGB(255, 151, 217, 238),
+        borderRadius: BorderRadius.only(
           bottomLeft: Radius.circular(24),
           bottomRight: Radius.circular(24),
         ),
@@ -103,8 +119,8 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Text(
+        children: const [
+          Text(
             'OptiTime',
             style: TextStyle(
               fontSize: 22,
@@ -205,7 +221,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: Column(
         children: [
-          // Clock row
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
             child: Row(
@@ -238,7 +253,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
           const SizedBox(height: 10),
 
-          // Próxima tarea label
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 8),
@@ -269,7 +283,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          // Task detail card
           Container(
             decoration: const BoxDecoration(
               color: Color(0xFFCC1F1F),
@@ -310,16 +323,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       child: const Text(
                         'Detalles',
-                        style: TextStyle(
-                            fontSize: 12, fontWeight: FontWeight.w600),
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(14),
@@ -385,11 +396,10 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
+            children: const [
+              Text(
                 'Tareas de Hoy',
                 style: TextStyle(
                   fontSize: 16,
@@ -397,12 +407,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: Color(0xFF1A1A2E),
                 ),
               ),
-              const Icon(Icons.more_horiz, color: Colors.grey),
+              Icon(Icons.more_horiz, color: Colors.grey),
             ],
           ),
           const SizedBox(height: 14),
-
-          // Task list
           ..._todayTasks.map((task) => Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: Row(
@@ -437,4 +445,4 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-} 
+}

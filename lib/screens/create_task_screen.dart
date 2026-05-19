@@ -5,29 +5,33 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
-import '../models/task_model.dart';
-import '../providers/task_provider.dart';
+import 'package:optitime/models/task_model.dart';
+import 'package:optitime/providers/task_provider.dart';
 
 class CreateTaskScreen extends StatefulWidget {
-  const CreateTaskScreen({super.key});
+  // Si se pasa una tarea existente, la pantalla entra en modo edición
+  final Task? task;
+
+  const CreateTaskScreen({super.key, this.task});
 
   @override
   State<CreateTaskScreen> createState() => _CreateTaskScreenState();
 }
 
 class _CreateTaskScreenState extends State<CreateTaskScreen> {
-  // ── Controladores ─────────────────────────────────────────────────────────
   final _titleController = TextEditingController();
   final _detailsController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
-  // ── Estado del formulario ─────────────────────────────────────────────────
   DateTime? _selectedDate;
   bool _noDate = false;
   String _selectedType = 'Academica';
-  int _selectedImportance = -1; // -1 = predeterminado
+  int _selectedImportance = -1;
   bool _reminder = false;
-  final List<String> _imagePaths = [];
+  List<String> _imagePaths = [];
+
+  // Modo edición si se recibió una tarea
+  bool get _isEditing => widget.task != null;
 
   final List<String> _taskTypes = [
     'Academica',
@@ -46,6 +50,23 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
     {'label': '4', 'color': const Color(0xFFEF5350), 'value': 4},
     {'label': '5', 'color': const Color(0xFF6D1F1F), 'value': 5},
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Si hay tarea existente, prellenamos todos los campos
+    if (_isEditing) {
+      final t = widget.task!;
+      _titleController.text = t.title;
+      _detailsController.text = t.details;
+      _selectedDate = t.dueDate;
+      _noDate = t.dueDate == null;
+      _selectedType = t.type;
+      _selectedImportance = t.importance;
+      _reminder = t.reminder;
+      _imagePaths = List.from(t.imagePaths);
+    }
+  }
 
   @override
   void dispose() {
@@ -69,7 +90,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
     final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
-      initialDate: now,
+      initialDate: _selectedDate ?? now,
       firstDate: now,
       lastDate: DateTime(now.year + 5),
       builder: (context, child) => Theme(
@@ -82,11 +103,12 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
         child: child!,
       ),
     );
-    if (picked != null) {
-      // También elegimos la hora
+    if (picked != null && mounted) {
       final pickedTime = await showTimePicker(
         context: context,
-        initialTime: TimeOfDay.now(),
+        initialTime: _selectedDate != null
+            ? TimeOfDay.fromDateTime(_selectedDate!)
+            : TimeOfDay.now(),
       );
       setState(() {
         _selectedDate = pickedTime != null
@@ -97,25 +119,68 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
     }
   }
 
-  // ── Guardar tarea ─────────────────────────────────────────────────────────
+  // ── Guardar o actualizar tarea ────────────────────────────────────────────
   Future<void> _saveTask() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final task = Task(
-      id: const Uuid().v4(),
-      title: _titleController.text.trim(),
-      dueDate: _noDate ? null : _selectedDate,
-      type: _selectedType,
-      details: _detailsController.text.trim(),
-      imagePaths: _imagePaths,
-      importance: _selectedImportance,
-      reminder: _reminder,
-      createdAt: DateTime.now(),
+    final provider = context.read<TaskProvider>();
+
+    if (_isEditing) {
+      // Actualiza la tarea existente conservando su id y fecha de creación
+      final updated = widget.task!.copyWith(
+        title: _titleController.text.trim(),
+        dueDate: _noDate ? null : _selectedDate,
+        clearDueDate: _noDate,
+        type: _selectedType,
+        details: _detailsController.text.trim(),
+        imagePaths: _imagePaths,
+        importance: _selectedImportance,
+        reminder: _reminder,
+      );
+      await provider.updateTask(updated);
+    } else {
+      // Crea una tarea nueva
+      final task = Task(
+        id: const Uuid().v4(),
+        title: _titleController.text.trim(),
+        dueDate: _noDate ? null : _selectedDate,
+        type: _selectedType,
+        details: _detailsController.text.trim(),
+        imagePaths: _imagePaths,
+        importance: _selectedImportance,
+        reminder: _reminder,
+        createdAt: DateTime.now(),
+      );
+      await provider.addTask(task);
+    }
+
+    if (mounted) Navigator.pop(context);
+  }
+
+  // ── Eliminar tarea (solo en modo edición) ─────────────────────────────────
+  Future<void> _deleteTask() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Eliminar tarea'),
+        content: const Text('¿Estás seguro de que quieres eliminar esta tarea?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
     );
-
-    await context.read<TaskProvider>().addTask(task);
-
-    if (mounted) Navigator.pop(context); // regresa a TasksScreen
+    if (confirm == true && mounted) {
+      await context.read<TaskProvider>().deleteTask(widget.task!.id);
+      if (mounted) Navigator.pop(context);
+    }
   }
 
   // ── Build ──────────────────────────────────────────────────────────────────
@@ -131,8 +196,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
               child: Form(
                 key: _formKey,
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 24, vertical: 20),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -151,6 +215,11 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
                       _buildRecordatorios(),
                       const SizedBox(height: 32),
                       _buildButtons(),
+                      // Botón eliminar solo en modo edición
+                      if (_isEditing) ...[
+                        const SizedBox(height: 12),
+                        _buildDeleteButton(),
+                      ],
                       const SizedBox(height: 20),
                     ],
                   ),
@@ -176,9 +245,9 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
           end: Alignment.centerRight,
         ),
       ),
-      child: const Text(
-        'Crear nueva tarea',
-        style: TextStyle(
+      child: Text(
+        _isEditing ? 'Editar tarea' : 'Crear nueva tarea',
+        style: const TextStyle(
           fontSize: 26,
           fontWeight: FontWeight.w900,
           color: Colors.white,
@@ -213,8 +282,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
             hintStyle: const TextStyle(color: Color(0xFFBDBDBD), fontSize: 14),
             filled: true,
             fillColor: Colors.white,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(30),
               borderSide: const BorderSide(color: Color(0xFFDDDDDD)),
@@ -250,7 +318,6 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
         _buildLabel('Día límite'),
         Row(
           children: [
-            // Ícono calendario
             GestureDetector(
               onTap: _pickDate,
               child: Container(
@@ -265,12 +332,10 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
               ),
             ),
             const SizedBox(width: 12),
-            // Chip de fecha
             GestureDetector(
               onTap: _pickDate,
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
@@ -289,16 +354,14 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
               ),
             ),
             const Spacer(),
-            // Toggle "No definir"
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 const Text('No definir',
-                    style:
-                        TextStyle(fontSize: 12, color: Color(0xFF757575))),
+                    style: TextStyle(fontSize: 12, color: Color(0xFF757575))),
                 Switch(
                   value: _noDate,
-                  activeThumbColor: const Color(0xFF3A3A9F),
+                  activeColor: const Color(0xFF3A3A9F),
                   onChanged: (v) => setState(() {
                     _noDate = v;
                     if (v) _selectedDate = null;
@@ -328,8 +391,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
             child: DropdownButton<String>(
               value: _selectedType,
               isExpanded: true,
-              icon: const Icon(Icons.arrow_drop_down,
-                  color: Color(0xFF3A3A9F)),
+              icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF3A3A9F)),
               items: _taskTypes
                   .map((t) => DropdownMenuItem(value: t, child: Text(t)))
                   .toList(),
@@ -354,8 +416,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
           decoration: InputDecoration(
             filled: true,
             fillColor: Colors.white,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(20),
               borderSide: const BorderSide(color: Color(0xFFDDDDDD)),
@@ -366,8 +427,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(20),
-              borderSide:
-                  const BorderSide(color: Color(0xFF3A3A9F), width: 2),
+              borderSide: const BorderSide(color: Color(0xFF3A3A9F), width: 2),
             ),
           ),
         ),
@@ -385,7 +445,6 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
           child: ListView(
             scrollDirection: Axis.horizontal,
             children: [
-              // Imágenes ya seleccionadas
               ..._imagePaths.map((path) => Padding(
                     padding: const EdgeInsets.only(right: 10),
                     child: Stack(
@@ -393,11 +452,8 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
                         ClipRRect(
                           borderRadius: BorderRadius.circular(12),
                           child: Image.file(File(path),
-                              width: 80,
-                              height: 80,
-                              fit: BoxFit.cover),
+                              width: 80, height: 80, fit: BoxFit.cover),
                         ),
-                        // Botón eliminar imagen
                         Positioned(
                           top: 2,
                           right: 2,
@@ -418,19 +474,16 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
                       ],
                     ),
                   )),
-
-              // Botón agregar imagen
               GestureDetector(
                 onTap: _pickImage,
                 child: Container(
                   width: 80,
                   height: 80,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF5BC8F5),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF5BC8F5),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.add,
-                      color: Colors.white, size: 36),
+                  child: const Icon(Icons.add, color: Colors.white, size: 36),
                 ),
               ),
             ],
@@ -468,17 +521,14 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
                       color: level['color'],
                       shape: BoxShape.circle,
                       border: isSelected
-                          ? Border.all(
-                              color: const Color(0xFF3A3A9F), width: 3)
+                          ? Border.all(color: const Color(0xFF3A3A9F), width: 3)
                           : null,
                       boxShadow: isSelected
-                          ? [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
-                                blurRadius: 8,
-                                offset: const Offset(0, 3),
-                              )
-                            ]
+                          ? [BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            )]
                           : [],
                     ),
                   ),
@@ -515,7 +565,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
         const Spacer(),
         Switch(
           value: _reminder,
-          activeThumbColor: const Color(0xFF3A3A9F),
+          activeColor: const Color(0xFF3A3A9F),
           onChanged: (v) => setState(() => _reminder = v),
         ),
       ],
@@ -525,18 +575,14 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
   Widget _buildButtons() {
     return Row(
       children: [
-        // Guardar
         Expanded(
           child: ElevatedButton(
             onPressed: _saveTask,
             style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 14),
+              padding: EdgeInsets.zero,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(30)),
-              backgroundColor: Colors.transparent,
-              shadowColor: Colors.transparent,
-            ).copyWith(
-              backgroundColor: WidgetStateProperty.all(Colors.transparent),
+              elevation: 0,
             ),
             child: Ink(
               decoration: BoxDecoration(
@@ -548,9 +594,9 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
               child: Container(
                 alignment: Alignment.center,
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                child: const Text(
-                  'Guardar',
-                  style: TextStyle(
+                child: Text(
+                  _isEditing ? 'Actualizar' : 'Guardar',
+                  style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
@@ -561,7 +607,6 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
           ),
         ),
         const SizedBox(width: 16),
-        // Cancelar
         Expanded(
           child: OutlinedButton(
             onPressed: () => Navigator.pop(context),
@@ -580,6 +625,26 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildDeleteButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: _deleteTask,
+        icon: const Icon(Icons.delete_outline, color: Colors.red),
+        label: const Text(
+          'Eliminar tarea',
+          style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+        ),
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(30)),
+          side: const BorderSide(color: Colors.red),
+        ),
+      ),
     );
   }
 }

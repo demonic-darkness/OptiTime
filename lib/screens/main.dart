@@ -1,15 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:optitime/providers/task_provider.dart';
+import 'package:optitime/providers/settings_provider.dart';
 import 'home_screen.dart';
 import 'tasks_screen.dart';
+import 'settings_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  final settings = SettingsProvider();
+  await settings.load();
   await Future.delayed(Duration.zero);
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => TaskProvider()..loadTasks(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => TaskProvider()..loadTasks()),
+        ChangeNotifierProvider.value(value: settings),
+      ],
       child: const OptiTimeApp(),
     ),
   );
@@ -47,7 +54,7 @@ class _MainNavigatorState extends State<MainNavigator> {
     const TasksScreen(), // 1 - Tareas
     const HomeScreen(),  // 2 - Inicio
     const Placeholder(), // 3 - Notificaciones (próximamente)
-    const Placeholder(), // 4 - Configuración (próximamente)
+    const SettingsScreen(), // 4 - Configuración (próximamente)
   ];
 
   @override

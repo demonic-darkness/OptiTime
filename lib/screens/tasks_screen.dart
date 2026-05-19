@@ -1,10 +1,12 @@
 // lib/screens/tasks_screen.dart
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:optitime/providers/task_provider.dart';
 import 'package:optitime/models/task_model.dart';
 import 'create_task_screen.dart';
+import 'package:optitime/providers/settings_provider.dart';
 
 class TasksScreen extends StatefulWidget {
   const TasksScreen({super.key});
@@ -17,8 +19,20 @@ class _TasksScreenState extends State<TasksScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
+  // ── Timer para el reloj en tiempo real ────────────────────────────────────
+  late Timer _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      setState(() {});
+    });
+  }
+
   @override
   void dispose() {
+    _timer.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -40,6 +54,12 @@ class _TasksScreenState extends State<TasksScreen> {
 
   // ── Color de tarjeta según importancia ────────────────────────────────────
   Color _taskColor(Task task) {
+     if (task.importance == -1) {
+        // Usa la configuración de colores por días faltantes
+        if (task.dueDate == null) return const Color(0xFF9E9E9E);
+        final daysLeft = task.dueDate!.difference(DateTime.now()).inDays;
+        return context.read<SettingsProvider>().colorForDaysLeft(daysLeft);
+      }
     switch (task.importance) {
       case 0: return const Color(0xFF5B8DEF);
       case 1: return const Color(0xFF66BB6A);
@@ -390,7 +410,12 @@ class _TasksScreenState extends State<TasksScreen> {
           const SizedBox(width: 10),
           ElevatedButton(
             onPressed: () {
-              // TODO: navegar al detalle de la tarea
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => CreateTaskScreen(task: task),
+                ),
+              );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
