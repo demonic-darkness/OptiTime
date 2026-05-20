@@ -1,6 +1,5 @@
 // lib/screens/home_screen.dart
 
-import 'dart:async';
 import 'package:flutter/material.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -12,56 +11,40 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
 
-  // ── Timer para el reloj en tiempo real ────────────────────────────────────
-  late Timer _timer;
-
   // ── Tareas de ejemplo ──────────────────────────────────────────────────────
   final List<Map<String, dynamic>> _todayTasks = [
-    {'title': 'Hacer ejercicio', 'status': 'done'},
+    {'title': 'Hacer ejercicio',   'status': 'done'},
     {'title': 'Terminar proyecto', 'status': 'warning'},
-    {'title': 'Revisar informes', 'status': 'urgent'},
+    {'title': 'Revisar informes',  'status': 'urgent'},
   ];
 
-  // ── Ciclo de vida ──────────────────────────────────────────────────────────
-  @override
-  void initState() {
-    super.initState();
-    // Actualiza la pantalla cada segundo para que el reloj sea en tiempo real
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      setState(() {});
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer.cancel(); // Cancela el timer al salir para evitar fugas de memoria
-    super.dispose();
-  }
+  // ── Paleta: Enfoque Índigo ─────────────────────────────────────────────────
+  static const Color _primary   = Color(0xFF4F46E5);
+  static const Color _accent    = Color(0xFF7C3AED);
+  static const Color _info      = Color(0xFF06B6D4);
+  static const Color _bgPage    = Color(0xFFF1F5F9);
+  static const Color _textDark  = Color(0xFF0F172A);
+  static const Color _textMuted = Color(0xFF64748B);
+  static const Color _success   = Color(0xFF22C55E);
+  static const Color _warning   = Color(0xFFFACC15);
+  static const Color _danger    = Color(0xFFEF4444);
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   Color _statusColor(String status) {
     switch (status) {
-      case 'done':
-        return const Color(0xFF4CAF50);
-      case 'warning':
-        return const Color(0xFFFFC107);
-      case 'urgent':
-        return const Color(0xFFE53935);
-      default:
-        return Colors.grey;
+      case 'done':    return _success;
+      case 'warning': return _warning;
+      case 'urgent':  return _danger;
+      default:        return Colors.grey;
     }
   }
 
   IconData _statusIcon(String status) {
     switch (status) {
-      case 'done':
-        return Icons.check_circle;
-      case 'warning':
-        return Icons.warning_amber_rounded;
-      case 'urgent':
-        return Icons.cancel;
-      default:
-        return Icons.circle_outlined;
+      case 'done':    return Icons.check_circle;
+      case 'warning': return Icons.warning_amber_rounded;
+      case 'urgent':  return Icons.cancel;
+      default:        return Icons.circle_outlined;
     }
   }
 
@@ -69,7 +52,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 255, 255, 255),
+      backgroundColor: _bgPage,
       body: SafeArea(
         child: Column(
           children: [
@@ -80,13 +63,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 12),
-                    _buildGreeting(),
                     const SizedBox(height: 16),
-                    _buildClockCard(),
+                    _buildGreeting(),
+                    const SizedBox(height: 20),
+                    _buildNextTaskHero(),
+                    const SizedBox(height: 16),
+                    _buildSummaryRow(),
                     const SizedBox(height: 20),
                     _buildTodayTasks(),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),
@@ -98,19 +83,26 @@ class _HomeScreenState extends State<HomeScreen> {
         onPressed: () {
           // TODO: add new task
         },
-        backgroundColor: const Color(0xFF5B8DEF),
+        backgroundColor: _primary,
         child: const Icon(Icons.add, color: Colors.white),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
-  // ── Widgets ────────────────────────────────────────────────────────────────
-
+  // ── AppBar con fecha discreta ──────────────────────────────────────────────
   Widget _buildAppBar() {
+    final now = DateTime.now();
+    final days = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+    final months = [
+      'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+      'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
+    ];
+    final dateStr = '${days[now.weekday - 1]} ${now.day}, ${months[now.month - 1]}';
+
     return Container(
       decoration: const BoxDecoration(
-        color: Color.fromARGB(255, 151, 217, 238),
+        color: Color(0xFFE0E7FF),
         borderRadius: BorderRadius.only(
           bottomLeft: Radius.circular(24),
           bottomRight: Radius.circular(24),
@@ -118,15 +110,23 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: const [
-          Text(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Text(
             'OptiTime',
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF3A3A9F),
+              color: _primary,
               letterSpacing: 1.2,
+            ),
+          ),
+          Text(
+            dateStr,
+            style: const TextStyle(
+              fontSize: 13,
+              color: _textMuted,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -134,15 +134,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // ── Saludo + notificación ──────────────────────────────────────────────────
   Widget _buildGreeting() {
-    final now = DateTime.now();
-    final days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-    final months = [
-      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-    ];
-    final dateStr = '${days[now.weekday - 1]}, ${now.day} de ${months[now.month - 1]}';
-
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -153,41 +146,27 @@ class _HomeScreenState extends State<HomeScreen> {
             fontSize: 24,
             fontWeight: FontWeight.w900,
             fontStyle: FontStyle.italic,
-            color: Color(0xFF1A1A2E),
+            color: _textDark,
           ),
         ),
-        Row(
+        Stack(
           children: [
-            Text(
-              dateStr,
-              style: const TextStyle(
-                fontSize: 11,
-                color: Color(0xFF9E9E9E),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(width: 6),
-            Stack(
-              children: [
-                const Icon(Icons.notifications_outlined,
-                    color: Color(0xFF3A3A9F), size: 26),
-                Positioned(
-                  right: 0,
-                  top: 0,
-                  child: Container(
-                    width: 10,
-                    height: 10,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFE53935),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Center(
-                      child: Text('1',
-                          style: TextStyle(fontSize: 6, color: Colors.white)),
-                    ),
-                  ),
+            const Icon(Icons.notifications_outlined, color: _primary, size: 28),
+            Positioned(
+              right: 0,
+              top: 0,
+              child: Container(
+                width: 10,
+                height: 10,
+                decoration: const BoxDecoration(
+                  color: _danger,
+                  shape: BoxShape.circle,
                 ),
-              ],
+                child: const Center(
+                  child: Text('1',
+                      style: TextStyle(fontSize: 6, color: Colors.white)),
+                ),
+              ),
             ),
           ],
         ),
@@ -195,190 +174,192 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildClockCard() {
-    final now = DateTime.now();
-    final hour = now.hour > 12 ? now.hour - 12 : (now.hour == 0 ? 12 : now.hour);
-    final amPm = now.hour >= 12 ? 'PM' : 'AM';
-    final timeStr =
-        '${hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
-
+  // ── Hero: próxima tarea urgente ────────────────────────────────────────────
+  Widget _buildNextTaskHero() {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         gradient: const LinearGradient(
-          colors: [Color(0xFF7B9FFF), Color(0xFF3A3A9F)],
+          colors: [Color(0xFF818CF8), _primary],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF5B8DEF).withOpacity(0.35),
+            color: _primary.withOpacity(0.35),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
         ],
       ),
+      padding: const EdgeInsets.all(20),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  timeStr,
-                  style: const TextStyle(
-                    fontSize: 52,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                    letterSpacing: 2,
-                  ),
+          // Etiquetas superior
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: Text(
-                    amPm,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white70,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 10),
-
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            decoration: const BoxDecoration(
-              color: Color(0xFFCC1F1F),
-            ),
-            child: const Column(
-              children: [
-                Text(
-                  'Proxima tarea:',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-                Text(
-                  'Tarea importante',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          Container(
-            decoration: const BoxDecoration(
-              color: Color(0xFFCC1F1F),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(24),
-                bottomRight: Radius.circular(24),
-              ),
-            ),
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: const Row(
                   children: [
-                    const Text(
-                      'Tipo: academico',
+                    Icon(Icons.bolt_rounded, color: Colors.white, size: 14),
+                    SizedBox(width: 4),
+                    Text(
+                      'PRÓXIMA TAREA',
                       style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 12,
-                      ),
-                    ),
-                    ElevatedButton(
-                      onPressed: () {
-                        // TODO: navigate to detail
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: const Color(0xFF3A3A9F),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 6),
-                        minimumSize: Size.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: const Text(
-                        'Detalles',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.8,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  decoration: BoxDecoration(
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _danger.withOpacity(0.85),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Text(
+                  'URGENTE',
+                  style: TextStyle(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE8F0FE),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(Icons.menu_book_rounded,
-                            color: Color(0xFF3A3A9F), size: 22),
-                      ),
-                      const SizedBox(width: 10),
-                      const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Entregar documentación de\nmatemáticas',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF424242),
-                            ),
-                          ),
-                          SizedBox(height: 2),
-                          Text(
-                            'Vence a las 5:00 PM',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF3A3A9F),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.8,
                   ),
                 ),
-              ],
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // Nombre de la tarea
+          const Text(
+            'Entregar documentación\nde matemáticas',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+              height: 1.25,
             ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // Metadata + botón
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.menu_book_rounded,
+                    color: Colors.white, size: 18),
+              ),
+              const SizedBox(width: 10),
+              const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Académico · Matemáticas',
+                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                  Text(
+                    'Vence a las 5:00 PM',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const Spacer(),
+              ElevatedButton(
+                onPressed: () {
+                  // TODO: navigate to detail
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: _primary,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  elevation: 0,
+                ),
+                child: const Text(
+                  'Detalles',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
+  // ── Fila de resumen rápido ─────────────────────────────────────────────────
+  Widget _buildSummaryRow() {
+    final items = [
+      {'label': 'Pendientes',  'count': '3', 'color': _primary,  'bg': const Color(0xFFEDE9FE)},
+      {'label': 'En progreso', 'count': '1', 'color': _info,     'bg': const Color(0xFFE0F2FE)},
+      {'label': 'Completadas', 'count': '2', 'color': _success,  'bg': const Color(0xFFDCFCE7)},
+    ];
+
+    return Row(
+      children: List.generate(items.length, (i) {
+        final item = items[i];
+        return Expanded(
+          child: Container(
+            margin: EdgeInsets.only(right: i < items.length - 1 ? 10 : 0),
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            decoration: BoxDecoration(
+              color: item['bg'] as Color,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              children: [
+                Text(
+                  item['count'] as String,
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: item['color'] as Color,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  item['label'] as String,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: (item['color'] as Color).withOpacity(0.8),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+  // ── Tareas de hoy ──────────────────────────────────────────────────────────
   Widget _buildTodayTasks() {
     return Container(
       padding: const EdgeInsets.all(18),
@@ -396,19 +377,13 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-              Text(
-                'Tareas de Hoy',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1A1A2E),
-                ),
-              ),
-              Icon(Icons.more_horiz, color: Colors.grey),
-            ],
+          const Text(
+            'Tareas de Hoy',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: _textDark,
+            ),
           ),
           const SizedBox(height: 14),
           ..._todayTasks.map((task) => Padding(
@@ -426,9 +401,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         task['title'],
                         style: TextStyle(
                           fontSize: 14,
-                          color: task['status'] == 'done'
-                              ? Colors.grey
-                              : const Color(0xFF1A1A2E),
+                          color: task['status'] == 'done' ? _textMuted : _textDark,
                           decoration: task['status'] == 'done'
                               ? TextDecoration.lineThrough
                               : TextDecoration.none,
@@ -437,7 +410,24 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     if (task['status'] == 'warning')
                       const Icon(Icons.warning_amber_rounded,
-                          color: Color(0xFFFFC107), size: 18),
+                          color: _warning, size: 18),
+                    if (task['status'] == 'urgent')
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFE4E4),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Text(
+                          'Urgente',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: _danger,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               )),
