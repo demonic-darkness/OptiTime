@@ -31,7 +31,7 @@ class OptiTimeApp extends StatelessWidget {
       title: 'OptiTime',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        scaffoldBackgroundColor: const Color(0xFFF0F4FF),
+        scaffoldBackgroundColor: const Color(0xFFF1F5F9), // igual que _bgPage en home_screen
       ),
       home: const MainNavigator(),
     );
@@ -48,19 +48,21 @@ class MainNavigator extends StatefulWidget {
 class _MainNavigatorState extends State<MainNavigator> {
   int _selectedIndex = 2; // Inicia en Home (posición 2)
 
-  // Agrega aquí las pantallas en el mismo orden que los íconos del nav
+  // ── Paleta: Enfoque Índigo ─────────────────────────────────────────────────
+  static const Color _primary     = Color(0xFF4F46E5);
+  static const Color _navInactive = Color(0xFFBDBDBD);
+
   final List<Widget> _screens = [
-    const Placeholder(), // 0 - Calendario (próximamente)
-    const TasksScreen(), // 1 - Tareas
-    const HomeScreen(),  // 2 - Inicio
-    const Placeholder(), // 3 - Notificaciones (próximamente)
-    const SettingsScreen(), // 4 - Configuración (próximamente)
+    const Placeholder(),    // 0 - Calendario (próximamente)
+    const TasksScreen(),    // 1 - Tareas
+    const HomeScreen(),     // 2 - Inicio
+    const Placeholder(),    // 3 - Notificaciones (próximamente)
+    const SettingsScreen(), // 4 - Configuración
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // IndexedStack mantiene el estado de cada pantalla al cambiar de tab
       body: IndexedStack(
         index: _selectedIndex,
         children: _screens,
@@ -101,15 +103,13 @@ class _MainNavigatorState extends State<MainNavigator> {
               padding: const EdgeInsets.all(10),
               decoration: isSelected
                   ? BoxDecoration(
-                      color: const Color(0xFF5B8DEF).withOpacity(0.12),
+                      color: _primary.withOpacity(0.12),
                       shape: BoxShape.circle,
                     )
                   : null,
               child: Icon(
                 icons[i],
-                color: isSelected
-                    ? const Color(0xFF3A3A9F)
-                    : const Color(0xFFBDBDBD),
+                color: isSelected ? _primary : _navInactive,
                 size: isSelected ? 28 : 24,
               ),
             ),

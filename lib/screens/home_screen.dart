@@ -12,15 +12,16 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
 
   // ── Tareas de ejemplo ──────────────────────────────────────────────────────
-  final List<Map<String, dynamic>> _todayTasks = [
-    {'title': 'Hacer ejercicio',   'status': 'done'},
-    {'title': 'Terminar proyecto', 'status': 'warning'},
-    {'title': 'Revisar informes',  'status': 'urgent'},
-  ];
+final List<Map<String, dynamic>> _todayTasks = [
+  {'title': 'Hacer ejercicio',       'status': 'done'},
+  {'title': 'Terminar proyecto',     'status': 'warning'},
+  {'title': 'Revisar informes',      'status': 'urgent'},
+  {'title': 'Estudiar para examen',  'status': 'warning'},  // +
+  {'title': 'Leer capítulo 5',       'status': 'urgent'},   // +
+];
 
   // ── Paleta: Enfoque Índigo ─────────────────────────────────────────────────
   static const Color _primary   = Color(0xFF4F46E5);
-  static const Color _accent    = Color(0xFF7C3AED);
   static const Color _info      = Color(0xFF06B6D4);
   static const Color _bgPage    = Color(0xFFF1F5F9);
   static const Color _textDark  = Color(0xFF0F172A);
@@ -359,8 +360,14 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── Tareas de hoy ──────────────────────────────────────────────────────────
+  // ── Tareas de hoy (colapsable, máx 3 visibles) ────────────────────────────
+  static const int _taskPreviewLimit = 3;
+
   Widget _buildTodayTasks() {
+    final pending = _todayTasks.where((t) => t['status'] != 'done').toList();
+    final visible = pending.take(_taskPreviewLimit).toList();
+    final extra   = pending.length - _taskPreviewLimit;
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -377,16 +384,78 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Tareas de Hoy',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: _textDark,
-            ),
+          // ── Encabezado ────────────────────────────────────────────────────
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Tareas de Hoy',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: _textDark,
+                ),
+              ),
+              if (pending.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEDE9FE),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '${pending.length} pendiente${pending.length > 1 ? 's' : ''}',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: _primary,
+                    ),
+                  ),
+                ),
+            ],
           ),
+
           const SizedBox(height: 14),
-          ..._todayTasks.map((task) => Padding(
+
+          // ── Estado vacío ──────────────────────────────────────────────────
+          if (pending.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFDCFCE7),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.celebration_rounded,
+                        color: _success, size: 24),
+                  ),
+                  const SizedBox(width: 12),
+                  const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '¡Sin pendientes por hoy!',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: _textDark,
+                        ),
+                      ),
+                      Text(
+                        'Disfruta tu tiempo libre 🎉',
+                        style: TextStyle(fontSize: 12, color: _textMuted),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+          // ── Lista (máx 3) ─────────────────────────────────────────────────
+          ...visible.map((task) => Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: Row(
                   children: [
@@ -399,12 +468,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     Expanded(
                       child: Text(
                         task['title'],
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 14,
-                          color: task['status'] == 'done' ? _textMuted : _textDark,
-                          decoration: task['status'] == 'done'
-                              ? TextDecoration.lineThrough
-                              : TextDecoration.none,
+                          color: _textDark,
                         ),
                       ),
                     ),
@@ -431,6 +497,32 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               )),
+
+          // ── Botón "Ver todas" si hay más de 3 ────────────────────────────
+          if (extra > 0) ...[
+            const Divider(height: 20, thickness: 0.8),
+            GestureDetector(
+              onTap: () {
+                // TODO: navegar a pestaña de tareas
+              },
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Ver $extra tarea${extra > 1 ? 's' : ''} más',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: _primary,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.arrow_forward_rounded,
+                      color: _primary, size: 16),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
