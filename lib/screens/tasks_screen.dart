@@ -8,6 +8,15 @@ import 'package:optitime/models/task_model.dart';
 import 'create_task_screen.dart';
 import 'package:optitime/providers/settings_provider.dart';
 
+enum _TaskFilterKind {
+  none,
+  type,
+  exactDate,
+  untilDate,
+  color,
+  overdue,
+}
+
 class TasksScreen extends StatefulWidget {
   const TasksScreen({super.key});
 
@@ -18,6 +27,28 @@ class TasksScreen extends StatefulWidget {
 class _TasksScreenState extends State<TasksScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  bool _showFilters = false;
+  _TaskFilterKind _activeFilter = _TaskFilterKind.none;
+  String? _selectedTypeFilter;
+  DateTime? _selectedDateFilter;
+  int? _selectedImportanceFilter;
+
+  final List<String> _taskTypes = const [
+    'Academica',
+    'Personal',
+    'Trabajo',
+    'Salud',
+    'Otro',
+  ];
+
+  final List<Map<String, dynamic>> _colorFilters = const [
+    {'label': 'Azul', 'color': Color(0xFF5B8DEF), 'value': 0},
+    {'label': 'Verde', 'color': Color(0xFF66BB6A), 'value': 1},
+    {'label': 'Amarillo', 'color': Color(0xFFFFEE58), 'value': 2},
+    {'label': 'Naranja', 'color': Color(0xFFFFA726), 'value': 3},
+    {'label': 'Rojo', 'color': Color(0xFFEF5350), 'value': 4},
+    {'label': 'Vino', 'color': Color(0xFF6D1F1F), 'value': 5},
+  ];
 
   // ── Timer para el reloj en tiempo real ────────────────────────────────────
   late Timer _timer;
@@ -57,10 +88,24 @@ class _TasksScreenState extends State<TasksScreen> {
     final taskDay = DateTime(due.year, due.month, due.day);
     final diff = taskDay.difference(today).inDays;
 
+    if (_isOverdue(task)) return 'Vencidas';
     if (diff == 0) return 'Hoy';
     if (diff == 1) return 'Mañana';
     if (diff > 1 && diff <= 7) return 'Esta semana';
     return 'Próximamente';
+  }
+
+  bool _isOverdue(Task task) {
+    if (task.dueDate == null) return false;
+    return task.dueDate!.isBefore(DateTime.now());
+  }
+
+  bool _isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  DateTime _dateOnly(DateTime date) {
+    return DateTime(date.year, date.month, date.day);
   }
 
   // ── Color de tarjeta según importancia ────────────────────────────────────
@@ -91,19 +136,129 @@ class _TasksScreenState extends State<TasksScreen> {
     return '$hour:$min $amPm';
   }
 
-  // ── Tareas filtradas por búsqueda ─────────────────────────────────────────
+  // ── Tareas filtradas por búsqueda y filtro activo ────────────────────────
   List<Task> _filteredTasks(List<Task> all) {
-    if (_searchQuery.isEmpty) return all;
-    return all
-        .where((t) => t.title.toLowerCase().contains(_searchQuery.toLowerCase()))
-        .toList();
+    final query = _searchQuery.toLowerCase();
+    return all.where((task) {
+      final matchesSearch =
+          query.isEmpty || task.title.toLowerCase().contains(query);
+
+      if (!matchesSearch) return false;
+
+      final overdue = _isOverdue(task);
+      if (_activeFilter != _TaskFilterKind.overdue && overdue) return false;
+
+      switch (_activeFilter) {
+        case _TaskFilterKind.none:
+          return true;
+        case _TaskFilterKind.type:
+          return task.type == _selectedTypeFilter;
+        case _TaskFilterKind.exactDate:
+          return task.dueDate != null &&
+              _selectedDateFilter != null &&
+              _isSameDay(task.dueDate!, _selectedDateFilter!);
+        case _TaskFilterKind.untilDate:
+          if (task.dueDate == null || _selectedDateFilter == null) {
+            return false;
+          }
+          final today = _dateOnly(DateTime.now());
+          final taskDay = _dateOnly(task.dueDate!);
+          final limit = _dateOnly(_selectedDateFilter!);
+          return !taskDay.isBefore(today) && !taskDay.isAfter(limit);
+        case _TaskFilterKind.color:
+          final selectedColor = _colorFilters.firstWhere(
+            (c) => c['value'] == _selectedImportanceFilter,
+            orElse: () => {'color': null},
+          )['color'];
+          return selectedColor is Color && _taskColor(task) == selectedColor;
+        case _TaskFilterKind.overdue:
+          return overdue;
+      }
+    }).toList();
   }
 
   // ── Secciones en orden ────────────────────────────────────────────────────
   List<String> _sections(List<Task> tasks) {
-    const order = ['Hoy', 'Mañana', 'Esta semana', 'Próximamente', 'Sin fecha'];
+    const order = ['Vencidas', 'Hoy', 'Mañana', 'Esta semana', 'Próximamente', 'Sin fecha'];
     final present = tasks.map((t) => _getSection(t)).toSet();
     return order.where((s) => present.contains(s)).toList();
+  }
+
+  String get _filterLabel {
+    switch (_activeFilter) {
+      case _TaskFilterKind.none:
+        return 'Filtrar';
+      case _TaskFilterKind.type:
+        return _selectedTypeFilter ?? 'Tipo';
+      case _TaskFilterKind.exactDate:
+        return _selectedDateFilter == null
+            ? 'Fecha'
+            : 'Fecha ${_formatDate(_selectedDateFilter!)}';
+      case _TaskFilterKind.untilDate:
+        return _selectedDateFilter == null
+            ? 'Hasta fecha'
+            : 'Hasta ${_formatDate(_selectedDateFilter!)}';
+      case _TaskFilterKind.color:
+        final color = _colorFilters.firstWhere(
+          (c) => c['value'] == _selectedImportanceFilter,
+          orElse: () => {'label': 'Color'},
+        );
+        return color['label'] as String;
+      case _TaskFilterKind.overdue:
+        return 'Vencidas';
+    }
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/'
+        '${date.month.toString().padLeft(2, '0')}/'
+        '${date.year}';
+  }
+
+  Future<void> _pickFilterDate(_TaskFilterKind kind) async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final initialDate =
+        kind == _TaskFilterKind.untilDate &&
+                _selectedDateFilter != null &&
+                _selectedDateFilter!.isBefore(today)
+            ? today
+            : (_selectedDateFilter ?? today);
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: kind == _TaskFilterKind.untilDate
+          ? today
+          : DateTime(today.year - 5),
+      lastDate: DateTime(today.year + 5),
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: const ColorScheme.light(
+            primary: Color(0xFF3A3A9F),
+            onPrimary: Colors.white,
+          ),
+        ),
+        child: child!,
+      ),
+    );
+
+    if (picked == null) return;
+    setState(() {
+      _activeFilter = kind;
+      _selectedDateFilter = picked;
+      _selectedTypeFilter = null;
+      _selectedImportanceFilter = null;
+      _showFilters = false;
+    });
+  }
+
+  void _clearFilter() {
+    setState(() {
+      _activeFilter = _TaskFilterKind.none;
+      _selectedTypeFilter = null;
+      _selectedDateFilter = null;
+      _selectedImportanceFilter = null;
+    });
   }
 
   // ── Build ──────────────────────────────────────────────────────────────────
@@ -249,12 +404,12 @@ class _TasksScreenState extends State<TasksScreen> {
             ),
             child: Row(
               children: const [
-                Icon(Icons.filter_alt_outlined, color: _primary, size: 18),
+                Icon(Icons.filter_alt_outlined, color: Color(0xFF3A3A9F), size: 18),
                 SizedBox(width: 4),
                 Text(
                   'Filtrar',
                   style: TextStyle(
-                    color: _primary,
+                    color: Color(0xFF3A3A9F),
                     fontWeight: FontWeight.w600,
                     fontSize: 13,
                   ),
@@ -322,6 +477,7 @@ class _TasksScreenState extends State<TasksScreen> {
   }
 
   Widget _buildEmptyState() {
+    final hasFilter = _activeFilter != _TaskFilterKind.none;
     return Padding(
       padding: const EdgeInsets.only(top: 50),
       child: Column(
@@ -346,19 +502,21 @@ class _TasksScreenState extends State<TasksScreen> {
             ),
           ),
           const SizedBox(height: 24),
-          const Text(
-            'Sin tareas por ahora',
-            style: TextStyle(
+          Text(
+            hasFilter ? 'Sin resultados' : 'Sin tareas por ahora',
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: _primary,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Presiona el botón + para agregar\ntu primera tarea',
+          Text(
+            hasFilter
+                ? 'No hay tareas que coincidan\ncon este filtro'
+                : 'Presiona el botón + para agregar\ntu primera tarea',
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 13,
               color: _textMuted,
               height: 1.6,
