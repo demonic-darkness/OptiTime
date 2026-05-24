@@ -38,7 +38,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
     {'label': 'Predeterminado\n(por\nconfiguración)', 'color': Colors.grey.shade300, 'value': -1},
     {'label': '0', 'color': const Color(0xFF90CAF9), 'value': 0},
     {'label': '1', 'color': const Color(0xFF66BB6A), 'value': 1},
-    {'label': '2', 'color': const Color(0xFFFFEE58), 'value': 2},
+    {'label': '2', 'color': const Color(0xFFE0A800), 'value': 2},
     {'label': '3', 'color': const Color(0xFFFFA726), 'value': 3},
     {'label': '4', 'color': const Color(0xFFEF5350), 'value': 4},
     {'label': '5', 'color': const Color(0xFF6D1F1F), 'value': 5},

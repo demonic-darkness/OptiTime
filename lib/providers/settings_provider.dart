@@ -40,7 +40,7 @@ class SettingsProvider extends ChangeNotifier {
         enabled: prefs.getBool('threshold_enabled_0') ?? true,
       ),
       ColorThreshold(
-        color: const Color(0xFFFFEE58),
+        color: const Color(0xFFE0A800),
         label: 'Amarillo',
         days: prefs.getInt('threshold_days_1') ?? 5,
         enabled: prefs.getBool('threshold_enabled_1') ?? true,

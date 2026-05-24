@@ -27,7 +27,7 @@ final List<Map<String, dynamic>> _todayTasks = [
   static const Color _textDark  = Color(0xFF0F172A);
   static const Color _textMuted = Color(0xFF64748B);
   static const Color _success   = Color(0xFF22C55E);
-  static const Color _warning   = Color(0xFFFACC15);
+  static const Color _warning   = Color(0xFFE0A800);
   static const Color _danger    = Color(0xFFEF4444);
 
   // ── Helpers ────────────────────────────────────────────────────────────────

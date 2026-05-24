@@ -37,7 +37,7 @@ class _TasksScreenState extends State<TasksScreen> {
   final List<Map<String, dynamic>> _colorFilters = const [
     {'label': 'Azul', 'color': Color(0xFF4F46E5), 'value': 0},
     {'label': 'Verde', 'color': Color(0xFF22C55E), 'value': 1},
-    {'label': 'Amarillo', 'color': Color(0xFFFACC15), 'value': 2},
+    {'label': 'Amarillo', 'color': Color(0xFFE0A800), 'value': 2},
     {'label': 'Naranja', 'color': Color(0xFFF97316), 'value': 3},
     {'label': 'Rojo', 'color': Color(0xFFEF4444), 'value': 4},
     {'label': 'Vino', 'color': Color(0xFF7F1D1D), 'value': 5},
@@ -69,7 +69,7 @@ class _TasksScreenState extends State<TasksScreen> {
   static const Color _textDark  = Color(0xFF0F172A);
   static const Color _textMuted = Color(0xFF64748B);
   static const Color _success   = Color(0xFF22C55E);
-  static const Color _warning   = Color(0xFFFACC15);
+  static const Color _warning   = Color(0xFFE0A800);
   static const Color _danger    = Color(0xFFEF4444);
 
   // ── Determina la sección de una tarea según su fecha ──────────────────────
@@ -443,7 +443,7 @@ class _TasksScreenState extends State<TasksScreen> {
     final acceptedColors = switch (selected) {
       0 => const [Color(0xFF4F46E5), Color(0xFF5B8DEF), Color(0xFF90CAF9)],
       1 => const [Color(0xFF22C55E), Color(0xFF66BB6A), Color(0xFF4CAF50)],
-      2 => const [Color(0xFFFACC15), Color(0xFFFFEE58)],
+      2 => const [Color(0xFFE0A800), Color(0xFFFACC15), Color(0xFFFFEE58)],
       3 => const [Color(0xFFF97316), Color(0xFFFFA726)],
       4 => const [Color(0xFFEF4444), Color(0xFFEF5350)],
       5 => const [Color(0xFF7F1D1D), Color(0xFF6D1F1F)],
@@ -662,11 +662,17 @@ class _TasksScreenState extends State<TasksScreen> {
         ],
       ),
     );
-    controller.dispose();
+    final cleanType = type?.trim();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      controller.dispose();
+    });
 
-    if (type == null || type.isEmpty || !mounted) return;
+    if (cleanType == null || cleanType.isEmpty || !mounted) return;
 
-    final added = await context.read<TaskTypeProvider>().addCustomType(type);
+    await Future<void>.delayed(Duration.zero);
+    if (!mounted) return;
+
+    final added = await context.read<TaskTypeProvider>().addCustomType(cleanType);
     if (!mounted) return;
 
     if (!added) {
@@ -678,7 +684,7 @@ class _TasksScreenState extends State<TasksScreen> {
 
     setState(() {
       _activeFilter = _TaskFilterKind.type;
-      _selectedTypeFilter = type;
+      _selectedTypeFilter = cleanType;
       _selectedDateFilter = null;
       _selectedImportanceFilter = null;
       _showFilters = false;
