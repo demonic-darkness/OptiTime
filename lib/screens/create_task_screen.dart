@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:optitime/models/task_model.dart';
 import 'package:optitime/providers/task_provider.dart';
+import 'package:optitime/providers/task_type_provider.dart';
 
 class CreateTaskScreen extends StatefulWidget {
   // Si se pasa una tarea existente, la pantalla entra en modo edición
@@ -32,14 +33,6 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
 
   // Modo edición si se recibió una tarea
   bool get _isEditing => widget.task != null;
-
-  final List<String> _taskTypes = [
-    'Academica',
-    'Personal',
-    'Trabajo',
-    'Salud',
-    'Otro',
-  ];
 
   final List<Map<String, dynamic>> _importanceLevels = [
     {'label': 'Predeterminado\n(por\nconfiguración)', 'color': Colors.grey.shade300, 'value': -1},
@@ -124,6 +117,10 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final provider = context.read<TaskProvider>();
+    final taskTypes = context.read<TaskTypeProvider>().allTypes;
+    final taskType = taskTypes.contains(_selectedType)
+        ? _selectedType
+        : TaskTypeProvider.defaultTypes.first;
 
     if (_isEditing) {
       // Actualiza la tarea existente conservando su id y fecha de creación
@@ -131,7 +128,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
         title: _titleController.text.trim(),
         dueDate: _noDate ? null : _selectedDate,
         clearDueDate: _noDate,
-        type: _selectedType,
+        type: taskType,
         details: _detailsController.text.trim(),
         imagePaths: _imagePaths,
         importance: _selectedImportance,
@@ -144,7 +141,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
         id: const Uuid().v4(),
         title: _titleController.text.trim(),
         dueDate: _noDate ? null : _selectedDate,
-        type: _selectedType,
+        type: taskType,
         details: _detailsController.text.trim(),
         imagePaths: _imagePaths,
         importance: _selectedImportance,
@@ -376,6 +373,10 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
   }
 
   Widget _buildTipoTarea() {
+    final taskTypes = context.watch<TaskTypeProvider>().allTypes;
+    final selectedType =
+        taskTypes.contains(_selectedType) ? _selectedType : taskTypes.first;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -389,10 +390,10 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
-              value: _selectedType,
+              value: selectedType,
               isExpanded: true,
               icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF3A3A9F)),
-              items: _taskTypes
+              items: taskTypes
                   .map((t) => DropdownMenuItem(value: t, child: Text(t)))
                   .toList(),
               onChanged: (v) {

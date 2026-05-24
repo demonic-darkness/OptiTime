@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:optitime/providers/task_provider.dart';
 import 'package:optitime/providers/settings_provider.dart';
+import 'package:optitime/providers/task_type_provider.dart';
 import 'home_screen.dart';
 import 'tasks_screen.dart';
 import 'settings_screen.dart';
@@ -9,13 +10,16 @@ import 'settings_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final settings = SettingsProvider();
+  final taskTypes = TaskTypeProvider();
   await settings.load();
+  await taskTypes.load();
   await Future.delayed(Duration.zero);
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => TaskProvider()..loadTasks()),
         ChangeNotifierProvider.value(value: settings),
+        ChangeNotifierProvider.value(value: taskTypes),
       ],
       child: const OptiTimeApp(),
     ),
