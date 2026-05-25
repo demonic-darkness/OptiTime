@@ -41,7 +41,9 @@ class OptiTimeApp extends StatelessWidget {
       title: 'OptiTime',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        scaffoldBackgroundColor: const Color(0xFFF1F5F9), // igual que _bgPage en home_screen
+        scaffoldBackgroundColor: const Color(
+          0xFFF1F5F9,
+        ), // igual que _bgPage en home_screen
       ),
       home: const MainNavigator(),
     );
@@ -61,16 +63,25 @@ class _MainNavigatorState extends State<MainNavigator> {
   bool _notificationSyncQueued = false;
 
   // ── Paleta: Enfoque Índigo ─────────────────────────────────────────────────
-  static const Color _primary     = Color(0xFF4F46E5);
+  static const Color _primary = Color(0xFF4F46E5);
   static const Color _navInactive = Color(0xFFBDBDBD);
 
-  final List<Widget> _screens = [
-    const Placeholder(),    // 0 - Calendario (próximamente)
-    const TasksScreen(),    // 1 - Tareas
-    const HomeScreen(),     // 2 - Inicio
-    const NotificationsScreen(), // 3 - Notificaciones
-    const SettingsScreen(), // 4 - Configuración
-  ];
+  late final List<Widget> _screens;
+
+  @override
+  void initState() {
+    super.initState();
+    _screens = [
+      const Placeholder(), // 0 - Calendario (próximamente)
+      const TasksScreen(), // 1 - Tareas
+      HomeScreen(
+        onOpenTasks: () => setState(() => _selectedIndex = 1),
+        onOpenNotifications: () => setState(() => _selectedIndex = 3),
+      ), // 2 - Inicio
+      const NotificationsScreen(), // 3 - Notificaciones
+      const SettingsScreen(), // 4 - Configuración
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -82,18 +93,15 @@ class _MainNavigatorState extends State<MainNavigator> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         context.read<AppNotificationProvider>().startAutoSync(
-              tasks: () => context.read<TaskProvider>().tasks,
-              settings: () => context.read<SettingsProvider>(),
-            );
+          tasks: () => context.read<TaskProvider>().tasks,
+          settings: () => context.read<SettingsProvider>(),
+        );
       });
     }
     _queueNotificationSync(tasks, settings);
 
     return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _screens,
-      ),
+      body: IndexedStack(index: _selectedIndex, children: _screens),
       bottomNavigationBar: _buildBottomNav(),
     );
   }
@@ -103,10 +111,7 @@ class _MainNavigatorState extends State<MainNavigator> {
     _notificationSyncQueued = true;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
-      await context.read<AppNotificationProvider>().syncTasks(
-            tasks,
-            settings,
-          );
+      await context.read<AppNotificationProvider>().syncTasks(tasks, settings);
       _notificationSyncQueued = false;
     });
   }
@@ -126,7 +131,7 @@ class _MainNavigatorState extends State<MainNavigator> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 16,
             offset: const Offset(0, -4),
           ),
@@ -143,7 +148,7 @@ class _MainNavigatorState extends State<MainNavigator> {
               padding: const EdgeInsets.all(10),
               decoration: isSelected
                   ? BoxDecoration(
-                      color: _primary.withOpacity(0.12),
+                      color: _primary.withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                     )
                   : null,

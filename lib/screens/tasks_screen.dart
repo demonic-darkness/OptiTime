@@ -34,16 +34,27 @@ class _TasksScreenState extends State<TasksScreen> {
   DateTime? _selectedDateFilter;
   int? _selectedImportanceFilter;
 
+  // ── Paleta: Azul claro, estilo iOS ────────────────────────────────────────
+  static const Color _primary   = Color(0xFF3B82F6);
+  static const Color _bgPage    = Color(0xFFF2F6FF);
+  static const Color _textDark  = Color(0xFF1C1C1E);
+  static const Color _textMuted = Color(0xFF8E8E93);
+  static const Color _success   = Color(0xFF34C759);
+  static const Color _warning   = Color(0xFFFF9F0A);
+  static const Color _danger    = Color(0xFFFF3B30);
+  static const Color _cardBg    = Color(0xFFFFFFFF);
+  static const String _font     = '.SF Pro Text';
+
   final List<Map<String, dynamic>> _colorFilters = const [
-    {'label': 'Azul', 'color': Color(0xFF4F46E5), 'value': 0},
-    {'label': 'Verde', 'color': Color(0xFF22C55E), 'value': 1},
-    {'label': 'Amarillo', 'color': Color(0xFFE0A800), 'value': 2},
-    {'label': 'Naranja', 'color': Color(0xFFF97316), 'value': 3},
-    {'label': 'Rojo', 'color': Color(0xFFEF4444), 'value': 4},
-    {'label': 'Vino', 'color': Color(0xFF7F1D1D), 'value': 5},
+    {'label': 'Azul',     'color': Color(0xFF3B82F6), 'value': 0},
+    {'label': 'Verde',    'color': Color(0xFF34C759), 'value': 1},
+    {'label': 'Amarillo', 'color': Color(0xFFFF9F0A), 'value': 2},
+    {'label': 'Naranja',  'color': Color(0xFFF97316), 'value': 3},
+    {'label': 'Rojo',     'color': Color(0xFFFF3B30), 'value': 4},
+    {'label': 'Vino',     'color': Color(0xFF7F1D1D), 'value': 5},
   ];
 
-  // ── Timer para el reloj en tiempo real ────────────────────────────────────
+  // ── Timer para el reloj ────────────────────────────────────────────────────
   late Timer _timer;
 
   @override
@@ -61,18 +72,7 @@ class _TasksScreenState extends State<TasksScreen> {
     super.dispose();
   }
 
-  // ── Paleta: Enfoque Índigo ─────────────────────────────────────────────────
-  static const Color _primary   = Color(0xFF4F46E5);
-  static const Color _accent    = Color(0xFF7C3AED);
-  static const Color _info      = Color(0xFF06B6D4);
-  static const Color _bgPage    = Color(0xFFF1F5F9);
-  static const Color _textDark  = Color(0xFF0F172A);
-  static const Color _textMuted = Color(0xFF64748B);
-  static const Color _success   = Color(0xFF22C55E);
-  static const Color _warning   = Color(0xFFE0A800);
-  static const Color _danger    = Color(0xFFEF4444);
-
-  // ── Determina la sección de una tarea según su fecha ──────────────────────
+  // ── Helpers de fecha/sección ───────────────────────────────────────────────
   String _getSection(Task task) {
     if (task.dueDate == null) return 'Sin fecha';
     final now = DateTime.now();
@@ -93,15 +93,18 @@ class _TasksScreenState extends State<TasksScreen> {
     return task.dueDate!.isBefore(DateTime.now());
   }
 
-  bool _isSameDay(DateTime a, DateTime b) {
-    return a.year == b.year && a.month == b.month && a.day == b.day;
-  }
+  bool _isSameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
 
-  DateTime _dateOnly(DateTime date) {
-    return DateTime(date.year, date.month, date.day);
-  }
+  DateTime _dateOnly(DateTime date) =>
+      DateTime(date.year, date.month, date.day);
 
-  // ── Color de tarjeta según importancia ────────────────────────────────────
+  String _formatDate(DateTime date) =>
+      '${date.day.toString().padLeft(2, '0')}/'
+      '${date.month.toString().padLeft(2, '0')}/'
+      '${date.year}';
+
+  // ── Color de tarjeta ───────────────────────────────────────────────────────
   Color _taskColor(Task task) {
     if (task.importance == -1) {
       if (task.dueDate == null) return _textMuted;
@@ -112,14 +115,14 @@ class _TasksScreenState extends State<TasksScreen> {
       case 0: return _primary;
       case 1: return _success;
       case 2: return _warning;
-      case 3: return const Color(0xFFF97316); // naranja
+      case 3: return const Color(0xFFF97316);
       case 4: return _danger;
-      case 5: return const Color(0xFF7F1D1D); // rojo oscuro
+      case 5: return const Color(0xFF7F1D1D);
       default: return _danger;
     }
   }
 
-  // ── Texto de vencimiento ──────────────────────────────────────────────────
+  // ── Texto de vencimiento ───────────────────────────────────────────────────
   String _dueText(Task task) {
     if (task.dueDate == null) return 'Sin fecha límite';
     final d = task.dueDate!;
@@ -129,13 +132,19 @@ class _TasksScreenState extends State<TasksScreen> {
     return '$hour:$min $amPm';
   }
 
-  // ── Tareas filtradas por búsqueda y filtro activo ────────────────────────
+  String _dueDisplayText(Task task) {
+    if (task.dueDate == null) return 'Sin fecha límite';
+    final due = task.dueDate!;
+    if (_isSameDay(due, DateTime.now())) return 'Vence a las ${_dueText(task)}';
+    return 'Vence el ${_formatDate(due)}';
+  }
+
+  // ── Filtrado ───────────────────────────────────────────────────────────────
   List<Task> _filteredTasks(List<Task> all) {
     final query = _searchQuery.toLowerCase();
     return all.where((task) {
       final matchesSearch =
           query.isEmpty || task.title.toLowerCase().contains(query);
-
       if (!matchesSearch) return false;
 
       final overdue = _isOverdue(task);
@@ -151,9 +160,7 @@ class _TasksScreenState extends State<TasksScreen> {
               _selectedDateFilter != null &&
               _isSameDay(task.dueDate!, _selectedDateFilter!);
         case _TaskFilterKind.untilDate:
-          if (task.dueDate == null || _selectedDateFilter == null) {
-            return false;
-          }
+          if (task.dueDate == null || _selectedDateFilter == null) return false;
           final today = _dateOnly(DateTime.now());
           final taskDay = _dateOnly(task.dueDate!);
           final limit = _dateOnly(_selectedDateFilter!);
@@ -166,7 +173,6 @@ class _TasksScreenState extends State<TasksScreen> {
     }).toList();
   }
 
-  // ── Secciones en orden ────────────────────────────────────────────────────
   List<String> _sections(List<Task> tasks) {
     const order = ['Vencidas', 'Hoy', 'Mañana', 'Esta semana', 'Próximamente', 'Sin fecha'];
     final present = tasks.map((t) => _getSection(t)).toSet();
@@ -175,55 +181,38 @@ class _TasksScreenState extends State<TasksScreen> {
 
   String get _filterLabel {
     switch (_activeFilter) {
-      case _TaskFilterKind.none:
-        return 'Filtrar';
-      case _TaskFilterKind.type:
-        return _selectedTypeFilter ?? 'Tipo';
-      case _TaskFilterKind.exactDate:
-        return _selectedDateFilter == null
-            ? 'Fecha'
-            : 'Fecha ${_formatDate(_selectedDateFilter!)}';
-      case _TaskFilterKind.untilDate:
-        return _selectedDateFilter == null
-            ? 'Hasta fecha'
-            : 'Hasta ${_formatDate(_selectedDateFilter!)}';
+      case _TaskFilterKind.none:      return 'Filtrar';
+      case _TaskFilterKind.type:      return _selectedTypeFilter ?? 'Tipo';
+      case _TaskFilterKind.exactDate: return _selectedDateFilter == null ? 'Fecha' : _formatDate(_selectedDateFilter!);
+      case _TaskFilterKind.untilDate: return _selectedDateFilter == null ? 'Hasta fecha' : 'Hasta ${_formatDate(_selectedDateFilter!)}';
       case _TaskFilterKind.color:
-        final color = _colorFilters.firstWhere(
+        final c = _colorFilters.firstWhere(
           (c) => c['value'] == _selectedImportanceFilter,
           orElse: () => {'label': 'Color'},
         );
-        return color['label'] as String;
-      case _TaskFilterKind.overdue:
-        return 'Vencidas';
+        return c['label'] as String;
+      case _TaskFilterKind.overdue: return 'Vencidas';
     }
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/'
-        '${date.month.toString().padLeft(2, '0')}/'
-        '${date.year}';
   }
 
   Future<void> _pickFilterDate(_TaskFilterKind kind) async {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final initialDate =
-        kind == _TaskFilterKind.untilDate &&
-                _selectedDateFilter != null &&
-                _selectedDateFilter!.isBefore(today)
-            ? today
-            : (_selectedDateFilter ?? today);
+    final initialDate = kind == _TaskFilterKind.untilDate &&
+            _selectedDateFilter != null &&
+            _selectedDateFilter!.isBefore(today)
+        ? today
+        : (_selectedDateFilter ?? today);
+
     final picked = await showDatePicker(
       context: context,
       initialDate: initialDate,
-      firstDate: kind == _TaskFilterKind.untilDate
-          ? today
-          : DateTime(today.year - 5),
+      firstDate: kind == _TaskFilterKind.untilDate ? today : DateTime(today.year - 5),
       lastDate: DateTime(today.year + 5),
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
           colorScheme: const ColorScheme.light(
-            primary: Color(0xFF3A3A9F),
+            primary: _primary,
             onPrimary: Colors.white,
           ),
         ),
@@ -241,13 +230,29 @@ class _TasksScreenState extends State<TasksScreen> {
     });
   }
 
-  void _clearFilter() {
-    setState(() {
-      _activeFilter = _TaskFilterKind.none;
-      _selectedTypeFilter = null;
-      _selectedDateFilter = null;
-      _selectedImportanceFilter = null;
-    });
+  void _clearFilter() => setState(() {
+        _activeFilter = _TaskFilterKind.none;
+        _selectedTypeFilter = null;
+        _selectedDateFilter = null;
+        _selectedImportanceFilter = null;
+      });
+
+  bool _matchesColorFilter(Task task) {
+    final selected = _selectedImportanceFilter;
+    if (selected == null) return false;
+    if (task.importance == selected) return true;
+    if (task.importance != -1) return false;
+    final taskColor = _taskColor(task);
+    final accepted = switch (selected) {
+      0 => const [Color(0xFF3B82F6), Color(0xFF5B8DEF), Color(0xFF90CAF9)],
+      1 => const [Color(0xFF34C759), Color(0xFF66BB6A), Color(0xFF4CAF50)],
+      2 => const [Color(0xFFFF9F0A), Color(0xFFFACC15), Color(0xFFFFEE58)],
+      3 => const [Color(0xFFF97316), Color(0xFFFFA726)],
+      4 => const [Color(0xFFFF3B30), Color(0xFFEF5350)],
+      5 => const [Color(0xFF7F1D1D), Color(0xFF6D1F1F)],
+      _ => const <Color>[],
+    };
+    return accepted.contains(taskColor);
   }
 
   // ── Build ──────────────────────────────────────────────────────────────────
@@ -272,9 +277,7 @@ class _TasksScreenState extends State<TasksScreen> {
                     const SizedBox(height: 14),
                     _buildClockBanner(),
                     const SizedBox(height: 18),
-                    tasks.isEmpty
-                        ? _buildEmptyState()
-                        : _buildTaskList(tasks),
+                    tasks.isEmpty ? _buildEmptyState() : _buildTaskList(tasks),
                     const SizedBox(height: 80),
                   ],
                 ),
@@ -284,57 +287,47 @@ class _TasksScreenState extends State<TasksScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const CreateTaskScreen()),
-          );
-        },
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const CreateTaskScreen()),
+        ),
         backgroundColor: _primary,
-        child: const Icon(Icons.add, color: Colors.white),
+        elevation: 2,
+        child: const Icon(Icons.add, color: Colors.white, size: 28),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
-  // ── Widgets ────────────────────────────────────────────────────────────────
-
+  // ── AppBar ─────────────────────────────────────────────────────────────────
   Widget _buildAppBar() {
     final now = DateTime.now();
     final days = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-    final months = [
-      'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
-      'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
-    ];
-    final dateStr = '${days[now.weekday - 1]} ${now.day}, ${months[now.month - 1]}';
+    final months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    final dateStr = '${days[now.weekday - 1]} ${now.day} ${months[now.month - 1]}';
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFFE0E7FF),
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(24),
-          bottomRight: Radius.circular(24),
-        ),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      color: _bgPage,
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(
+          Text(
             'OptiTime',
             style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
+              fontFamily: _font,
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
               color: _primary,
-              letterSpacing: 1.2,
+              letterSpacing: -0.3,
             ),
           ),
           Text(
             dateStr,
-            style: const TextStyle(
-              fontSize: 13,
+            style: TextStyle(
+              fontFamily: _font,
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
               color: _textMuted,
-              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -342,6 +335,7 @@ class _TasksScreenState extends State<TasksScreen> {
     );
   }
 
+  // ── Búsqueda y filtros ─────────────────────────────────────────────────────
   Widget _buildSearchAndFilter() {
     return Column(
       children: [
@@ -351,11 +345,11 @@ class _TasksScreenState extends State<TasksScreen> {
               child: Container(
                 height: 44,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: _cardBg,
                   borderRadius: BorderRadius.circular(22),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.06),
+                      color: Colors.black.withOpacity(0.05),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -364,28 +358,35 @@ class _TasksScreenState extends State<TasksScreen> {
                 child: TextField(
                   controller: _searchController,
                   onChanged: (v) => setState(() => _searchQuery = v),
-                  decoration: const InputDecoration(
-                    hintText: 'Buscar',
-                    hintStyle: TextStyle(color: Color(0xFFBDBDBD), fontSize: 14),
-                    prefixIcon: Icon(Icons.search, color: Color(0xFFBDBDBD), size: 20),
+                  style: TextStyle(fontFamily: _font, fontSize: 15, color: _textDark),
+                  decoration: InputDecoration(
+                    hintText: 'Buscar tarea...',
+                    hintStyle: TextStyle(
+                      fontFamily: _font,
+                      color: _textMuted,
+                      fontSize: 15,
+                    ),
+                    prefixIcon: Icon(Icons.search, color: _textMuted, size: 20),
                     border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(vertical: 12),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             GestureDetector(
               onTap: () => setState(() => _showFilters = !_showFilters),
               child: Container(
                 height: 44,
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: _activeFilter != _TaskFilterKind.none
+                      ? _primary
+                      : _cardBg,
                   borderRadius: BorderRadius.circular(22),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.06),
+                      color: Colors.black.withOpacity(0.05),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -393,15 +394,24 @@ class _TasksScreenState extends State<TasksScreen> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.filter_alt_outlined, color: _primary, size: 18),
+                    Icon(
+                      Icons.filter_alt_outlined,
+                      color: _activeFilter != _TaskFilterKind.none
+                          ? Colors.white
+                          : _primary,
+                      size: 18,
+                    ),
                     const SizedBox(width: 4),
                     ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 92),
+                      constraints: const BoxConstraints(maxWidth: 80),
                       child: Text(
                         _filterLabel,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: _primary,
+                        style: TextStyle(
+                          fontFamily: _font,
+                          color: _activeFilter != _TaskFilterKind.none
+                              ? Colors.white
+                              : _primary,
                           fontWeight: FontWeight.w600,
                           fontSize: 13,
                         ),
@@ -411,7 +421,9 @@ class _TasksScreenState extends State<TasksScreen> {
                       _showFilters
                           ? Icons.keyboard_arrow_up
                           : Icons.keyboard_arrow_down,
-                      color: _primary,
+                      color: _activeFilter != _TaskFilterKind.none
+                          ? Colors.white
+                          : _primary,
                       size: 18,
                     ),
                   ],
@@ -432,26 +444,6 @@ class _TasksScreenState extends State<TasksScreen> {
     );
   }
 
-  bool _matchesColorFilter(Task task) {
-    final selected = _selectedImportanceFilter;
-    if (selected == null) return false;
-    if (task.importance == selected) return true;
-
-    if (task.importance != -1) return false;
-
-    final taskColor = _taskColor(task);
-    final acceptedColors = switch (selected) {
-      0 => const [Color(0xFF4F46E5), Color(0xFF5B8DEF), Color(0xFF90CAF9)],
-      1 => const [Color(0xFF22C55E), Color(0xFF66BB6A), Color(0xFF4CAF50)],
-      2 => const [Color(0xFFE0A800), Color(0xFFFACC15), Color(0xFFFFEE58)],
-      3 => const [Color(0xFFF97316), Color(0xFFFFA726)],
-      4 => const [Color(0xFFEF4444), Color(0xFFEF5350)],
-      5 => const [Color(0xFF7F1D1D), Color(0xFF6D1F1F)],
-      _ => const <Color>[],
-    };
-    return acceptedColors.contains(taskColor);
-  }
-
   Widget _buildFilterMenu() {
     final taskTypeProvider = context.watch<TaskTypeProvider>();
     final allTasks = context.watch<TaskProvider>().tasks;
@@ -459,13 +451,13 @@ class _TasksScreenState extends State<TasksScreen> {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(top: 10),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _cardBg,
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 3),
           ),
@@ -474,6 +466,17 @@ class _TasksScreenState extends State<TasksScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text(
+            'FILTRAR POR',
+            style: TextStyle(
+              fontFamily: _font,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: _textMuted,
+              letterSpacing: 0.8,
+            ),
+          ),
+          const SizedBox(height: 10),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -503,7 +506,7 @@ class _TasksScreenState extends State<TasksScreen> {
                 onTap: _showAddCustomTypeDialog,
               ),
               _buildFilterChip(
-                label: 'Fecha específica',
+                label: 'Fecha exacta',
                 icon: Icons.event_outlined,
                 selected: _activeFilter == _TaskFilterKind.exactDate,
                 onTap: () => _pickFilterDate(_TaskFilterKind.exactDate),
@@ -528,13 +531,24 @@ class _TasksScreenState extends State<TasksScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
+          Text(
+            'POR COLOR',
+            style: TextStyle(
+              fontFamily: _font,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: _textMuted,
+              letterSpacing: 0.8,
+            ),
+          ),
+          const SizedBox(height: 10),
           Wrap(
             spacing: 10,
             runSpacing: 10,
-            children: _colorFilters.map((colorFilter) {
-              final value = colorFilter['value'] as int;
-              final color = colorFilter['color'] as Color;
+            children: _colorFilters.map((cf) {
+              final value = cf['value'] as int;
+              final color = cf['color'] as Color;
               final selected = _activeFilter == _TaskFilterKind.color &&
                   _selectedImportanceFilter == value;
               return GestureDetector(
@@ -553,19 +567,19 @@ class _TasksScreenState extends State<TasksScreen> {
                     color: color,
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: selected ? _primary : Colors.white,
-                      width: selected ? 3 : 2,
+                      color: selected ? _textDark : Colors.white,
+                      width: selected ? 2.5 : 2,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: color.withOpacity(0.28),
-                        blurRadius: 8,
-                        offset: const Offset(0, 3),
+                        color: color.withOpacity(0.3),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
                       ),
                     ],
                   ),
                   child: selected
-                      ? const Icon(Icons.check, color: Colors.white, size: 18)
+                      ? const Icon(Icons.check, color: Colors.white, size: 16)
                       : null,
                 ),
               );
@@ -573,16 +587,25 @@ class _TasksScreenState extends State<TasksScreen> {
           ),
           if (_activeFilter != _TaskFilterKind.none) ...[
             const SizedBox(height: 12),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                onPressed: _clearFilter,
-                icon: const Icon(Icons.close, size: 16),
-                label: const Text('Quitar filtro'),
-                style: TextButton.styleFrom(
-                  foregroundColor: _primary,
-                  visualDensity: VisualDensity.compact,
-                ),
+            Divider(height: 1, thickness: 0.5, color: Colors.black.withOpacity(0.07)),
+            const SizedBox(height: 8),
+            GestureDetector(
+              onTap: _clearFilter,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.close_rounded, size: 15, color: _danger),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Quitar filtro',
+                    style: TextStyle(
+                      fontFamily: _font,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: _danger,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -600,79 +623,309 @@ class _TasksScreenState extends State<TasksScreen> {
   }) {
     return GestureDetector(
       onLongPress: onLongPress,
-      child: ChoiceChip(
-        label: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null) ...[
-              Icon(icon, size: 16),
-              const SizedBox(width: 4),
-            ],
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 140),
-              child: Text(
-                label,
-                overflow: TextOverflow.ellipsis,
-              ),
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          decoration: BoxDecoration(
+            color: selected ? _primary : _bgPage,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: selected ? _primary : Colors.transparent,
             ),
-          ],
-        ),
-        selected: selected,
-        onSelected: (_) => onTap(),
-        selectedColor: const Color(0xFFE0E7FF),
-        backgroundColor: const Color(0xFFF8FAFC),
-        labelStyle: TextStyle(
-          color: selected ? _primary : _textMuted,
-          fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-          fontSize: 12,
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-          side: BorderSide(
-            color: selected ? _primary : const Color(0xFFE2E8F0),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (icon != null) ...[
+                Icon(icon, size: 14, color: selected ? Colors.white : _textMuted),
+                const SizedBox(width: 5),
+              ],
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 120),
+                child: Text(
+                  label,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: _font,
+                    fontSize: 13,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                    color: selected ? Colors.white : _textDark,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
+  // ── Reloj banner ───────────────────────────────────────────────────────────
+  Widget _buildClockBanner() {
+    final now = DateTime.now();
+    final hour = now.hour > 12 ? now.hour - 12 : (now.hour == 0 ? 12 : now.hour);
+    final amPm = now.hour >= 12 ? 'PM' : 'AM';
+    final timeStr = '${hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 24),
+      decoration: BoxDecoration(
+        color: _primary,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: _primary.withOpacity(0.25),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Text(
+            timeStr,
+            style: TextStyle(
+              fontFamily: _font,
+              fontSize: 44,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+              letterSpacing: -1,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 7, left: 6),
+            child: Text(
+              amPm,
+              style: TextStyle(
+                fontFamily: _font,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.white.withOpacity(0.7),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Estado vacío ───────────────────────────────────────────────────────────
+  Widget _buildEmptyState() {
+    final hasFilter = _activeFilter != _TaskFilterKind.none;
+    return Padding(
+      padding: const EdgeInsets.only(top: 60),
+      child: Column(
+        children: [
+          Text(
+            hasFilter ? '🔍' : '📋',
+            style: const TextStyle(fontSize: 52),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            hasFilter ? 'Sin resultados' : 'Sin tareas por ahora',
+            style: TextStyle(
+              fontFamily: _font,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: _textDark,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            hasFilter
+                ? 'No hay tareas que coincidan\ncon este filtro'
+                : 'Presiona el botón + para agregar\ntu primera tarea',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: _font,
+              fontSize: 14,
+              color: _textMuted,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Lista de tareas ────────────────────────────────────────────────────────
+  Widget _buildTaskList(List<Task> tasks) {
+    final sections = _sections(tasks);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: sections.map((section) {
+        final sectionTasks = tasks.where((t) => _getSection(t) == section).toList();
+        final isOverdueSection = section == 'Vencidas';
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Row(
+                children: [
+                  if (isOverdueSection) ...[
+                    Icon(Icons.warning_amber_rounded, color: _danger, size: 15),
+                    const SizedBox(width: 5),
+                  ],
+                  Text(
+                    section.toUpperCase(),
+                    style: TextStyle(
+                      fontFamily: _font,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: isOverdueSection ? _danger : _textMuted,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            ...sectionTasks.map((task) => _buildTaskCard(task)),
+            const SizedBox(height: 16),
+          ],
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildTaskCard(Task task) {
+    final color = _taskColor(task);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.25),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(_typeIcon(task.type), color: Colors.white, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  task.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: _font,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Row(
+                  children: [
+                    Icon(Icons.access_time_rounded,
+                        color: Colors.white.withOpacity(0.7), size: 12),
+                    const SizedBox(width: 4),
+                    Text(
+                      _dueDisplayText(task),
+                      style: TextStyle(
+                        fontFamily: _font,
+                        color: Colors.white.withOpacity(0.85),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => CreateTaskScreen(task: task)),
+            ),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                'Ver',
+                style: TextStyle(
+                  fontFamily: _font,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Dialogs ────────────────────────────────────────────────────────────────
   Future<void> _showAddCustomTypeDialog() async {
     final controller = TextEditingController();
     final type = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Nuevo tipo de tarea'),
+        title: Text('Nuevo tipo de tarea',
+            style: TextStyle(fontFamily: _font, fontWeight: FontWeight.w600)),
         content: TextField(
           controller: controller,
           autofocus: true,
           textCapitalization: TextCapitalization.sentences,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             hintText: 'Ej. Proyecto, Familia...',
+            hintStyle: TextStyle(fontFamily: _font, color: _textMuted),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancelar'),
+            child: Text('Cancelar',
+                style: TextStyle(fontFamily: _font, color: _textMuted)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            child: const Text('Guardar'),
+            child: Text('Guardar',
+                style: TextStyle(fontFamily: _font, color: _primary,
+                    fontWeight: FontWeight.w600)),
           ),
         ],
       ),
     );
-    final cleanType = type?.trim();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      controller.dispose();
-    });
 
+    final cleanType = type?.trim();
+    WidgetsBinding.instance.addPostFrameCallback((_) => controller.dispose());
     if (cleanType == null || cleanType.isEmpty || !mounted) return;
 
     await Future<void>.delayed(Duration.zero);
     if (!mounted) return;
 
-    final added = await context.read<TaskTypeProvider>().addCustomType(cleanType);
+    final added =
+        await context.read<TaskTypeProvider>().addCustomType(cleanType);
     if (!mounted) return;
 
     if (!added) {
@@ -692,15 +945,13 @@ class _TasksScreenState extends State<TasksScreen> {
   }
 
   Future<void> _deleteCustomType(String type, List<Task> allTasks) async {
-    final hasActiveTasks = allTasks.any(
-      (task) => task.type == type && !_isOverdue(task),
-    );
+    final hasActiveTasks =
+        allTasks.any((task) => task.type == type && !_isOverdue(task));
 
     if (hasActiveTasks) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('No se puede eliminar "$type" porque tiene tareas activas'),
-        ),
+        SnackBar(content: Text(
+            'No se puede eliminar "$type" porque tiene tareas activas')),
       );
       return;
     }
@@ -708,278 +959,42 @@ class _TasksScreenState extends State<TasksScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Eliminar tipo'),
-        content: Text('¿Eliminar "$type" de tus tipos personalizados?'),
+        title: Text('Eliminar tipo',
+            style: TextStyle(fontFamily: _font, fontWeight: FontWeight.w600)),
+        content: Text('¿Eliminar "$type" de tus tipos personalizados?',
+            style: TextStyle(fontFamily: _font)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancelar'),
+            child: Text('Cancelar',
+                style: TextStyle(fontFamily: _font, color: _textMuted)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: _danger),
-            child: const Text('Eliminar'),
+            child: Text('Eliminar',
+                style: TextStyle(fontFamily: _font, color: _danger,
+                    fontWeight: FontWeight.w600)),
           ),
         ],
       ),
     );
 
     if (confirm != true || !mounted) return;
-
     await context.read<TaskTypeProvider>().removeCustomType(type);
     if (!mounted) return;
 
-    if (_activeFilter == _TaskFilterKind.type && _selectedTypeFilter == type) {
-      _clearFilter();
-    }
+    if (_activeFilter == _TaskFilterKind.type &&
+        _selectedTypeFilter == type) _clearFilter();
   }
 
   IconData _typeIcon(String type) {
     switch (type.toLowerCase()) {
-      case 'academica':
-        return Icons.school_outlined;
-      case 'personal':
-        return Icons.person_outline;
-      case 'trabajo':
-        return Icons.work_outline;
-      case 'salud':
-        return Icons.favorite_border;
-      case 'otro':
-        return Icons.category_outlined;
-      default:
-        return Icons.label_outline;
+      case 'academica': return Icons.school_outlined;
+      case 'personal':  return Icons.person_outline;
+      case 'trabajo':   return Icons.work_outline;
+      case 'salud':     return Icons.favorite_border;
+      case 'otro':      return Icons.category_outlined;
+      default:          return Icons.label_outline;
     }
-  }
-
-  String _dueDisplayText(Task task) {
-    if (task.dueDate == null) return 'Sin fecha límite';
-    final due = task.dueDate!;
-    if (_isSameDay(due, DateTime.now())) {
-      return 'Vence a las ${_dueText(task)}';
-    }
-    return 'Vence el ${_formatDate(due)}';
-  }
-
-  Widget _buildClockBanner() {
-    final now = DateTime.now();
-    final hour = now.hour > 12 ? now.hour - 12 : (now.hour == 0 ? 12 : now.hour);
-    final amPm = now.hour >= 12 ? 'PM' : 'AM';
-    final timeStr =
-        '${hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF818CF8), _primary],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: _primary.withOpacity(0.3),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Text(
-            timeStr,
-            style: const TextStyle(
-              fontSize: 42,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-              letterSpacing: 2,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(bottom: 6),
-            child: Text(
-              amPm,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.white70,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    final hasFilter = _activeFilter != _TaskFilterKind.none;
-    return Padding(
-      padding: const EdgeInsets.only(top: 50),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(28),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: _primary.withOpacity(0.12),
-                  blurRadius: 20,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: const Icon(
-              Icons.assignment_outlined,
-              size: 56,
-              color: Color(0xFFC7D2FE), // índigo 200
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            hasFilter ? 'Sin resultados' : 'Sin tareas por ahora',
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: _primary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            hasFilter
-                ? 'No hay tareas que coincidan\ncon este filtro'
-                : 'Presiona el botón + para agregar\ntu primera tarea',
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 13,
-              color: _textMuted,
-              height: 1.6,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTaskList(List<Task> tasks) {
-    final sections = _sections(tasks);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: sections.map((section) {
-        final sectionTasks =
-            tasks.where((t) => _getSection(t) == section).toList();
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: Text(
-                section,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: _textMuted,
-                ),
-              ),
-            ),
-            ...sectionTasks.map((task) => _buildTaskCard(task)),
-            const SizedBox(height: 16),
-          ],
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildTaskCard(Task task) {
-    final color = _taskColor(task);
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.22),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              _typeIcon(task.type),
-              color: Colors.white,
-              size: 21,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  task.title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 17,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  _dueDisplayText(task),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 10),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => CreateTaskScreen(task: task),
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: _primary,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              elevation: 0,
-            ),
-            child: const Text(
-              'Ver',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }
