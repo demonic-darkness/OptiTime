@@ -9,14 +9,7 @@ import 'create_task_screen.dart';
 import 'package:optitime/providers/settings_provider.dart';
 import 'package:optitime/providers/task_type_provider.dart';
 
-enum _TaskFilterKind {
-  none,
-  type,
-  exactDate,
-  untilDate,
-  color,
-  overdue,
-}
+enum _TaskFilterKind { none, type, exactDate, untilDate, color, overdue }
 
 class TasksScreen extends StatefulWidget {
   const TasksScreen({super.key});
@@ -35,23 +28,34 @@ class _TasksScreenState extends State<TasksScreen> {
   int? _selectedImportanceFilter;
 
   // ── Paleta: Azul claro, estilo iOS ────────────────────────────────────────
-  static const Color _primary   = Color(0xFF3B82F6);
-  static const Color _bgPage    = Color(0xFFF2F6FF);
-  static const Color _textDark  = Color(0xFF1C1C1E);
+  static const Color _primary = Color(0xFF3B82F6);
+  static const Color _bgPage = Color(0xFFF2F6FF);
+  static const Color _textDark = Color(0xFF1C1C1E);
   static const Color _textMuted = Color(0xFF8E8E93);
-  static const Color _success   = Color(0xFF34C759);
-  static const Color _warning   = Color(0xFFFF9F0A);
-  static const Color _danger    = Color(0xFFFF3B30);
-  static const Color _cardBg    = Color(0xFFFFFFFF);
-  static const String _font     = '.SF Pro Text';
+  static const Color _success = Color(0xFF34C759);
+  static const Color _warning = Color(0xFFFF9F0A);
+  static const Color _danger = Color(0xFFFF3B30);
+  static const Color _cardBg = Color(0xFFFFFFFF);
+  static const String _font = '.SF Pro Text';
+
+  bool get _isDark => context.read<SettingsProvider>().darkMode;
+  Color get _pageBg => _isDark ? const Color(0xFF0F172A) : _bgPage;
+  Color get _surface => _isDark ? const Color(0xFF1E293B) : _cardBg;
+  Color get _surfaceAlt => _isDark ? const Color(0xFF111827) : _bgPage;
+  Color get _heading => _isDark ? const Color(0xFFE5E7EB) : _textDark;
+  Color get _muted => _isDark ? const Color(0xFF94A3B8) : _textMuted;
+  Color get _accent => _isDark ? const Color(0xFF60A5FA) : _primary;
+  Color get _softBorder =>
+      _isDark ? Colors.white.withValues(alpha: 0.08) : Colors.transparent;
+  Color get _shadow => Colors.black.withValues(alpha: _isDark ? 0.28 : 0.05);
 
   final List<Map<String, dynamic>> _colorFilters = const [
-    {'label': 'Azul',     'color': Color(0xFF3B82F6), 'value': 0},
-    {'label': 'Verde',    'color': Color(0xFF34C759), 'value': 1},
+    {'label': 'Azul', 'color': Color(0xFF3B82F6), 'value': 0},
+    {'label': 'Verde', 'color': Color(0xFF34C759), 'value': 1},
     {'label': 'Amarillo', 'color': Color(0xFFFF9F0A), 'value': 2},
-    {'label': 'Naranja',  'color': Color(0xFFF97316), 'value': 3},
-    {'label': 'Rojo',     'color': Color(0xFFFF3B30), 'value': 4},
-    {'label': 'Vino',     'color': Color(0xFF7F1D1D), 'value': 5},
+    {'label': 'Naranja', 'color': Color(0xFFF97316), 'value': 3},
+    {'label': 'Rojo', 'color': Color(0xFFFF3B30), 'value': 4},
+    {'label': 'Vino', 'color': Color(0xFF7F1D1D), 'value': 5},
   ];
 
   // ── Timer para el reloj ────────────────────────────────────────────────────
@@ -107,18 +111,25 @@ class _TasksScreenState extends State<TasksScreen> {
   // ── Color de tarjeta ───────────────────────────────────────────────────────
   Color _taskColor(Task task) {
     if (task.importance == -1) {
-      if (task.dueDate == null) return _textMuted;
+      if (task.dueDate == null) return _muted;
       final daysLeft = task.dueDate!.difference(DateTime.now()).inDays;
       return context.read<SettingsProvider>().colorForDaysLeft(daysLeft);
     }
     switch (task.importance) {
-      case 0: return _primary;
-      case 1: return _success;
-      case 2: return _warning;
-      case 3: return const Color(0xFFF97316);
-      case 4: return _danger;
-      case 5: return const Color(0xFF7F1D1D);
-      default: return _danger;
+      case 0:
+        return _accent;
+      case 1:
+        return _success;
+      case 2:
+        return _warning;
+      case 3:
+        return const Color(0xFFF97316);
+      case 4:
+        return _danger;
+      case 5:
+        return const Color(0xFF7F1D1D);
+      default:
+        return _danger;
     }
   }
 
@@ -174,31 +185,49 @@ class _TasksScreenState extends State<TasksScreen> {
   }
 
   List<String> _sections(List<Task> tasks) {
-    const order = ['Vencidas', 'Hoy', 'Mañana', 'Esta semana', 'Próximamente', 'Sin fecha'];
+    const order = [
+      'Vencidas',
+      'Hoy',
+      'Mañana',
+      'Esta semana',
+      'Próximamente',
+      'Sin fecha',
+    ];
     final present = tasks.map((t) => _getSection(t)).toSet();
     return order.where((s) => present.contains(s)).toList();
   }
 
   String get _filterLabel {
     switch (_activeFilter) {
-      case _TaskFilterKind.none:      return 'Filtrar';
-      case _TaskFilterKind.type:      return _selectedTypeFilter ?? 'Tipo';
-      case _TaskFilterKind.exactDate: return _selectedDateFilter == null ? 'Fecha' : _formatDate(_selectedDateFilter!);
-      case _TaskFilterKind.untilDate: return _selectedDateFilter == null ? 'Hasta fecha' : 'Hasta ${_formatDate(_selectedDateFilter!)}';
+      case _TaskFilterKind.none:
+        return 'Filtrar';
+      case _TaskFilterKind.type:
+        return _selectedTypeFilter ?? 'Tipo';
+      case _TaskFilterKind.exactDate:
+        return _selectedDateFilter == null
+            ? 'Fecha'
+            : _formatDate(_selectedDateFilter!);
+      case _TaskFilterKind.untilDate:
+        return _selectedDateFilter == null
+            ? 'Hasta fecha'
+            : 'Hasta ${_formatDate(_selectedDateFilter!)}';
       case _TaskFilterKind.color:
         final c = _colorFilters.firstWhere(
           (c) => c['value'] == _selectedImportanceFilter,
           orElse: () => {'label': 'Color'},
         );
         return c['label'] as String;
-      case _TaskFilterKind.overdue: return 'Vencidas';
+      case _TaskFilterKind.overdue:
+        return 'Vencidas';
     }
   }
 
   Future<void> _pickFilterDate(_TaskFilterKind kind) async {
+    final isDark = context.read<SettingsProvider>().darkMode;
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final initialDate = kind == _TaskFilterKind.untilDate &&
+    final initialDate =
+        kind == _TaskFilterKind.untilDate &&
             _selectedDateFilter != null &&
             _selectedDateFilter!.isBefore(today)
         ? today
@@ -207,13 +236,17 @@ class _TasksScreenState extends State<TasksScreen> {
     final picked = await showDatePicker(
       context: context,
       initialDate: initialDate,
-      firstDate: kind == _TaskFilterKind.untilDate ? today : DateTime(today.year - 5),
+      firstDate: kind == _TaskFilterKind.untilDate
+          ? today
+          : DateTime(today.year - 5),
       lastDate: DateTime(today.year + 5),
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
-          colorScheme: const ColorScheme.light(
-            primary: _primary,
-            onPrimary: Colors.white,
+          colorScheme: isDark
+              ? ColorScheme.dark(primary: _accent, onPrimary: Colors.white)
+              : ColorScheme.light(primary: _accent, onPrimary: Colors.white),
+          dialogTheme: DialogThemeData(
+            backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
           ),
         ),
         child: child!,
@@ -231,11 +264,11 @@ class _TasksScreenState extends State<TasksScreen> {
   }
 
   void _clearFilter() => setState(() {
-        _activeFilter = _TaskFilterKind.none;
-        _selectedTypeFilter = null;
-        _selectedDateFilter = null;
-        _selectedImportanceFilter = null;
-      });
+    _activeFilter = _TaskFilterKind.none;
+    _selectedTypeFilter = null;
+    _selectedDateFilter = null;
+    _selectedImportanceFilter = null;
+  });
 
   bool _matchesColorFilter(Task task) {
     final selected = _selectedImportanceFilter;
@@ -258,11 +291,12 @@ class _TasksScreenState extends State<TasksScreen> {
   // ── Build ──────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
+    context.watch<SettingsProvider>().darkMode;
     final allTasks = context.watch<TaskProvider>().tasks;
     final tasks = _filteredTasks(allTasks);
 
     return Scaffold(
-      backgroundColor: _bgPage,
+      backgroundColor: _pageBg,
       body: SafeArea(
         child: Column(
           children: [
@@ -291,7 +325,7 @@ class _TasksScreenState extends State<TasksScreen> {
           context,
           MaterialPageRoute(builder: (_) => const CreateTaskScreen()),
         ),
-        backgroundColor: _primary,
+        backgroundColor: _accent,
         elevation: 2,
         child: const Icon(Icons.add, color: Colors.white, size: 28),
       ),
@@ -302,11 +336,25 @@ class _TasksScreenState extends State<TasksScreen> {
   Widget _buildAppBar() {
     final now = DateTime.now();
     final days = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-    final months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-    final dateStr = '${days[now.weekday - 1]} ${now.day} ${months[now.month - 1]}';
+    final months = [
+      'Ene',
+      'Feb',
+      'Mar',
+      'Abr',
+      'May',
+      'Jun',
+      'Jul',
+      'Ago',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dic',
+    ];
+    final dateStr =
+        '${days[now.weekday - 1]} ${now.day} ${months[now.month - 1]}';
 
     return Container(
-      color: _bgPage,
+      color: _pageBg,
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -317,7 +365,7 @@ class _TasksScreenState extends State<TasksScreen> {
               fontFamily: _font,
               fontSize: 20,
               fontWeight: FontWeight.w700,
-              color: _primary,
+              color: _accent,
               letterSpacing: -0.3,
             ),
           ),
@@ -327,7 +375,7 @@ class _TasksScreenState extends State<TasksScreen> {
               fontFamily: _font,
               fontSize: 14,
               fontWeight: FontWeight.w400,
-              color: _textMuted,
+              color: _muted,
             ),
           ),
         ],
@@ -345,11 +393,12 @@ class _TasksScreenState extends State<TasksScreen> {
               child: Container(
                 height: 44,
                 decoration: BoxDecoration(
-                  color: _cardBg,
+                  color: _surface,
                   borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: _softBorder),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: _shadow,
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -358,15 +407,19 @@ class _TasksScreenState extends State<TasksScreen> {
                 child: TextField(
                   controller: _searchController,
                   onChanged: (v) => setState(() => _searchQuery = v),
-                  style: TextStyle(fontFamily: _font, fontSize: 15, color: _textDark),
+                  style: TextStyle(
+                    fontFamily: _font,
+                    fontSize: 15,
+                    color: _heading,
+                  ),
                   decoration: InputDecoration(
                     hintText: 'Buscar tarea...',
                     hintStyle: TextStyle(
                       fontFamily: _font,
-                      color: _textMuted,
+                      color: _muted,
                       fontSize: 15,
                     ),
-                    prefixIcon: Icon(Icons.search, color: _textMuted, size: 20),
+                    prefixIcon: Icon(Icons.search, color: _muted, size: 20),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(vertical: 12),
                   ),
@@ -381,12 +434,13 @@ class _TasksScreenState extends State<TasksScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 decoration: BoxDecoration(
                   color: _activeFilter != _TaskFilterKind.none
-                      ? _primary
-                      : _cardBg,
+                      ? _accent
+                      : _surface,
                   borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: _softBorder),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: _shadow,
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -398,7 +452,7 @@ class _TasksScreenState extends State<TasksScreen> {
                       Icons.filter_alt_outlined,
                       color: _activeFilter != _TaskFilterKind.none
                           ? Colors.white
-                          : _primary,
+                          : _accent,
                       size: 18,
                     ),
                     const SizedBox(width: 4),
@@ -411,7 +465,7 @@ class _TasksScreenState extends State<TasksScreen> {
                           fontFamily: _font,
                           color: _activeFilter != _TaskFilterKind.none
                               ? Colors.white
-                              : _primary,
+                              : _accent,
                           fontWeight: FontWeight.w600,
                           fontSize: 13,
                         ),
@@ -423,7 +477,7 @@ class _TasksScreenState extends State<TasksScreen> {
                           : Icons.keyboard_arrow_down,
                       color: _activeFilter != _TaskFilterKind.none
                           ? Colors.white
-                          : _primary,
+                          : _accent,
                       size: 18,
                     ),
                   ],
@@ -453,14 +507,11 @@ class _TasksScreenState extends State<TasksScreen> {
       margin: const EdgeInsets.only(top: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: _cardBg,
+        color: _surface,
         borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _softBorder),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
+          BoxShadow(color: _shadow, blurRadius: 10, offset: const Offset(0, 3)),
         ],
       ),
       child: Column(
@@ -472,7 +523,7 @@ class _TasksScreenState extends State<TasksScreen> {
               fontFamily: _font,
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: _textMuted,
+              color: _muted,
               letterSpacing: 0.8,
             ),
           ),
@@ -485,7 +536,8 @@ class _TasksScreenState extends State<TasksScreen> {
                 (type) => _buildFilterChip(
                   label: type,
                   icon: _typeIcon(type),
-                  selected: _activeFilter == _TaskFilterKind.type &&
+                  selected:
+                      _activeFilter == _TaskFilterKind.type &&
                       _selectedTypeFilter == type,
                   onTap: () => setState(() {
                     _activeFilter = _TaskFilterKind.type;
@@ -538,7 +590,7 @@ class _TasksScreenState extends State<TasksScreen> {
               fontFamily: _font,
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: _textMuted,
+              color: _muted,
               letterSpacing: 0.8,
             ),
           ),
@@ -549,7 +601,8 @@ class _TasksScreenState extends State<TasksScreen> {
             children: _colorFilters.map((cf) {
               final value = cf['value'] as int;
               final color = cf['color'] as Color;
-              final selected = _activeFilter == _TaskFilterKind.color &&
+              final selected =
+                  _activeFilter == _TaskFilterKind.color &&
                   _selectedImportanceFilter == value;
               return GestureDetector(
                 onTap: () => setState(() {
@@ -567,12 +620,16 @@ class _TasksScreenState extends State<TasksScreen> {
                     color: color,
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: selected ? _textDark : Colors.white,
+                      color: selected
+                          ? _heading
+                          : (_isDark
+                                ? Colors.white.withValues(alpha: 0.22)
+                                : Colors.white),
                       width: selected ? 2.5 : 2,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: color.withOpacity(0.3),
+                        color: color.withValues(alpha: 0.3),
                         blurRadius: 6,
                         offset: const Offset(0, 2),
                       ),
@@ -587,7 +644,13 @@ class _TasksScreenState extends State<TasksScreen> {
           ),
           if (_activeFilter != _TaskFilterKind.none) ...[
             const SizedBox(height: 12),
-            Divider(height: 1, thickness: 0.5, color: Colors.black.withOpacity(0.07)),
+            Divider(
+              height: 1,
+              thickness: 0.5,
+              color: _isDark
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : Colors.black.withValues(alpha: 0.07),
+            ),
             const SizedBox(height: 8),
             GestureDetector(
               onTap: _clearFilter,
@@ -629,17 +692,15 @@ class _TasksScreenState extends State<TasksScreen> {
           duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
           decoration: BoxDecoration(
-            color: selected ? _primary : _bgPage,
+            color: selected ? _accent : _surfaceAlt,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: selected ? _primary : Colors.transparent,
-            ),
+            border: Border.all(color: selected ? _accent : _softBorder),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               if (icon != null) ...[
-                Icon(icon, size: 14, color: selected ? Colors.white : _textMuted),
+                Icon(icon, size: 14, color: selected ? Colors.white : _muted),
                 const SizedBox(width: 5),
               ],
               ConstrainedBox(
@@ -651,7 +712,7 @@ class _TasksScreenState extends State<TasksScreen> {
                     fontFamily: _font,
                     fontSize: 13,
                     fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                    color: selected ? Colors.white : _textDark,
+                    color: selected ? Colors.white : _heading,
                   ),
                 ),
               ),
@@ -665,19 +726,22 @@ class _TasksScreenState extends State<TasksScreen> {
   // ── Reloj banner ───────────────────────────────────────────────────────────
   Widget _buildClockBanner() {
     final now = DateTime.now();
-    final hour = now.hour > 12 ? now.hour - 12 : (now.hour == 0 ? 12 : now.hour);
+    final hour = now.hour > 12
+        ? now.hour - 12
+        : (now.hour == 0 ? 12 : now.hour);
     final amPm = now.hour >= 12 ? 'PM' : 'AM';
-    final timeStr = '${hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+    final timeStr =
+        '${hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 24),
       decoration: BoxDecoration(
-        color: _primary,
+        color: _accent,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: _primary.withOpacity(0.25),
+            color: _accent.withValues(alpha: 0.25),
             blurRadius: 14,
             offset: const Offset(0, 6),
           ),
@@ -704,7 +768,7 @@ class _TasksScreenState extends State<TasksScreen> {
                 fontFamily: _font,
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
-                color: Colors.white.withOpacity(0.7),
+                color: Colors.white.withValues(alpha: 0.7),
               ),
             ),
           ),
@@ -720,10 +784,7 @@ class _TasksScreenState extends State<TasksScreen> {
       padding: const EdgeInsets.only(top: 60),
       child: Column(
         children: [
-          Text(
-            hasFilter ? '🔍' : '📋',
-            style: const TextStyle(fontSize: 52),
-          ),
+          Text(hasFilter ? '🔍' : '📋', style: const TextStyle(fontSize: 52)),
           const SizedBox(height: 16),
           Text(
             hasFilter ? 'Sin resultados' : 'Sin tareas por ahora',
@@ -731,7 +792,7 @@ class _TasksScreenState extends State<TasksScreen> {
               fontFamily: _font,
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: _textDark,
+              color: _heading,
             ),
           ),
           const SizedBox(height: 6),
@@ -743,7 +804,7 @@ class _TasksScreenState extends State<TasksScreen> {
             style: TextStyle(
               fontFamily: _font,
               fontSize: 14,
-              color: _textMuted,
+              color: _muted,
               height: 1.5,
             ),
           ),
@@ -758,7 +819,9 @@ class _TasksScreenState extends State<TasksScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: sections.map((section) {
-        final sectionTasks = tasks.where((t) => _getSection(t) == section).toList();
+        final sectionTasks = tasks
+            .where((t) => _getSection(t) == section)
+            .toList();
         final isOverdueSection = section == 'Vencidas';
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -777,7 +840,7 @@ class _TasksScreenState extends State<TasksScreen> {
                       fontFamily: _font,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: isOverdueSection ? _danger : _textMuted,
+                      color: isOverdueSection ? _danger : _muted,
                       letterSpacing: 0.8,
                     ),
                   ),
@@ -802,7 +865,7 @@ class _TasksScreenState extends State<TasksScreen> {
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.25),
+            color: color.withValues(alpha: _isDark ? 0.34 : 0.25),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -814,7 +877,7 @@ class _TasksScreenState extends State<TasksScreen> {
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               shape: BoxShape.circle,
             ),
             child: Icon(_typeIcon(task.type), color: Colors.white, size: 20),
@@ -839,14 +902,17 @@ class _TasksScreenState extends State<TasksScreen> {
                 const SizedBox(height: 3),
                 Row(
                   children: [
-                    Icon(Icons.access_time_rounded,
-                        color: Colors.white.withOpacity(0.7), size: 12),
+                    Icon(
+                      Icons.access_time_rounded,
+                      color: Colors.white.withValues(alpha: 0.7),
+                      size: 12,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       _dueDisplayText(task),
                       style: TextStyle(
                         fontFamily: _font,
-                        color: Colors.white.withOpacity(0.85),
+                        color: Colors.white.withValues(alpha: 0.85),
                         fontSize: 12,
                         fontWeight: FontWeight.w400,
                       ),
@@ -890,28 +956,43 @@ class _TasksScreenState extends State<TasksScreen> {
     final type = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Nuevo tipo de tarea',
-            style: TextStyle(fontFamily: _font, fontWeight: FontWeight.w600)),
+        backgroundColor: _surface,
+        title: Text(
+          'Nuevo tipo de tarea',
+          style: TextStyle(
+            fontFamily: _font,
+            fontWeight: FontWeight.w600,
+            color: _heading,
+          ),
+        ),
         content: TextField(
           controller: controller,
           autofocus: true,
           textCapitalization: TextCapitalization.sentences,
+          style: TextStyle(fontFamily: _font, color: _heading),
           decoration: InputDecoration(
             hintText: 'Ej. Proyecto, Familia...',
-            hintStyle: TextStyle(fontFamily: _font, color: _textMuted),
+            hintStyle: TextStyle(fontFamily: _font, color: _muted),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancelar',
-                style: TextStyle(fontFamily: _font, color: _textMuted)),
+            child: Text(
+              'Cancelar',
+              style: TextStyle(fontFamily: _font, color: _muted),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            child: Text('Guardar',
-                style: TextStyle(fontFamily: _font, color: _primary,
-                    fontWeight: FontWeight.w600)),
+            child: Text(
+              'Guardar',
+              style: TextStyle(
+                fontFamily: _font,
+                color: _accent,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
       ),
@@ -924,8 +1005,9 @@ class _TasksScreenState extends State<TasksScreen> {
     await Future<void>.delayed(Duration.zero);
     if (!mounted) return;
 
-    final added =
-        await context.read<TaskTypeProvider>().addCustomType(cleanType);
+    final added = await context.read<TaskTypeProvider>().addCustomType(
+      cleanType,
+    );
     if (!mounted) return;
 
     if (!added) {
@@ -945,13 +1027,17 @@ class _TasksScreenState extends State<TasksScreen> {
   }
 
   Future<void> _deleteCustomType(String type, List<Task> allTasks) async {
-    final hasActiveTasks =
-        allTasks.any((task) => task.type == type && !_isOverdue(task));
+    final hasActiveTasks = allTasks.any(
+      (task) => task.type == type && !_isOverdue(task),
+    );
 
     if (hasActiveTasks) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(
-            'No se puede eliminar "$type" porque tiene tareas activas')),
+        SnackBar(
+          content: Text(
+            'No se puede eliminar "$type" porque tiene tareas activas',
+          ),
+        ),
       );
       return;
     }
@@ -959,21 +1045,37 @@ class _TasksScreenState extends State<TasksScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Eliminar tipo',
-            style: TextStyle(fontFamily: _font, fontWeight: FontWeight.w600)),
-        content: Text('¿Eliminar "$type" de tus tipos personalizados?',
-            style: TextStyle(fontFamily: _font)),
+        backgroundColor: _surface,
+        title: Text(
+          'Eliminar tipo',
+          style: TextStyle(
+            fontFamily: _font,
+            fontWeight: FontWeight.w600,
+            color: _heading,
+          ),
+        ),
+        content: Text(
+          '¿Eliminar "$type" de tus tipos personalizados?',
+          style: TextStyle(fontFamily: _font, color: _heading),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Cancelar',
-                style: TextStyle(fontFamily: _font, color: _textMuted)),
+            child: Text(
+              'Cancelar',
+              style: TextStyle(fontFamily: _font, color: _muted),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text('Eliminar',
-                style: TextStyle(fontFamily: _font, color: _danger,
-                    fontWeight: FontWeight.w600)),
+            child: Text(
+              'Eliminar',
+              style: TextStyle(
+                fontFamily: _font,
+                color: _danger,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
       ),
@@ -983,18 +1085,25 @@ class _TasksScreenState extends State<TasksScreen> {
     await context.read<TaskTypeProvider>().removeCustomType(type);
     if (!mounted) return;
 
-    if (_activeFilter == _TaskFilterKind.type &&
-        _selectedTypeFilter == type) _clearFilter();
+    if (_activeFilter == _TaskFilterKind.type && _selectedTypeFilter == type) {
+      _clearFilter();
+    }
   }
 
   IconData _typeIcon(String type) {
     switch (type.toLowerCase()) {
-      case 'academica': return Icons.school_outlined;
-      case 'personal':  return Icons.person_outline;
-      case 'trabajo':   return Icons.work_outline;
-      case 'salud':     return Icons.favorite_border;
-      case 'otro':      return Icons.category_outlined;
-      default:          return Icons.label_outline;
+      case 'academica':
+        return Icons.school_outlined;
+      case 'personal':
+        return Icons.person_outline;
+      case 'trabajo':
+        return Icons.work_outline;
+      case 'salud':
+        return Icons.favorite_border;
+      case 'otro':
+        return Icons.category_outlined;
+      default:
+        return Icons.label_outline;
     }
   }
 }

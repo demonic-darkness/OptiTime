@@ -31,11 +31,18 @@ class _HomeScreenState extends State<HomeScreen> {
   // ── Fuente estilo iOS (SF Pro → usa el sistema en iOS, fallback sans en Android)
   static const String _font = '.SF Pro Text';
 
+  bool get _darkMode => context.watch<SettingsProvider>().darkMode;
+  Color get _pageBg => _darkMode ? const Color(0xFF0F172A) : _bgPage;
+  Color get _surface => _darkMode ? const Color(0xFF1E293B) : _cardBg;
+  Color get _heading => _darkMode ? const Color(0xFFE5E7EB) : _textDark;
+  Color get _muted => _darkMode ? const Color(0xFF94A3B8) : _textMuted;
+  Color get _homePrimary => _darkMode ? const Color(0xFF60A5FA) : _primary;
+
   // ── Build ──────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bgPage,
+      backgroundColor: _pageBg,
       body: SafeArea(
         child: Column(
           children: [
@@ -62,7 +69,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _openCreateTask,
-        backgroundColor: _primary,
+        backgroundColor: _homePrimary,
         elevation: 2,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
         child: const Icon(Icons.add, color: Colors.white, size: 28),
@@ -92,7 +99,7 @@ class _HomeScreenState extends State<HomeScreen> {
         '${days[now.weekday - 1]} ${now.day} ${months[now.month - 1]}';
 
     return Container(
-      color: _bgPage,
+      color: _pageBg,
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -103,7 +110,7 @@ class _HomeScreenState extends State<HomeScreen> {
               fontFamily: _font,
               fontSize: 20,
               fontWeight: FontWeight.w700,
-              color: _primary,
+              color: _homePrimary,
               letterSpacing: -0.3,
             ),
           ),
@@ -113,7 +120,7 @@ class _HomeScreenState extends State<HomeScreen> {
               fontFamily: _font,
               fontSize: 14,
               fontWeight: FontWeight.w400,
-              color: _textMuted,
+              color: _muted,
             ),
           ),
         ],
@@ -136,7 +143,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 fontFamily: _font,
                 fontSize: 26,
                 fontWeight: FontWeight.w700,
-                color: _textDark,
+                color: _heading,
                 letterSpacing: -0.5,
               ),
             ),
@@ -151,11 +158,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: _cardBg,
+                  color: _surface,
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.06),
+                      color: Colors.black.withValues(
+                        alpha: _darkMode ? 0.22 : 0.06,
+                      ),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -163,7 +172,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 child: Icon(
                   Icons.notifications_outlined,
-                  color: _textDark,
+                  color: _heading,
                   size: 20,
                 ),
               ),
@@ -199,7 +208,7 @@ class _HomeScreenState extends State<HomeScreen> {
             fontFamily: _font,
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: _textMuted,
+            color: _muted,
             letterSpacing: 0.8,
           ),
         ),
@@ -209,11 +218,13 @@ class _HomeScreenState extends State<HomeScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: _cardBg,
+              color: _surface,
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
+                  color: Colors.black.withValues(
+                    alpha: _darkMode ? 0.22 : 0.04,
+                  ),
                   blurRadius: 10,
                   offset: const Offset(0, 2),
                 ),
@@ -225,7 +236,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 fontFamily: _font,
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
-                color: _textMuted,
+                color: _muted,
               ),
             ),
           )
@@ -234,11 +245,11 @@ class _HomeScreenState extends State<HomeScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: _primary,
+              color: _homePrimary,
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: _primary.withValues(alpha: 0.25),
+                  color: _homePrimary.withValues(alpha: 0.25),
                   blurRadius: 16,
                   offset: const Offset(0, 6),
                 ),
@@ -323,7 +334,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             fontFamily: _font,
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
-                            color: _primary,
+                            color: _homePrimary,
                           ),
                         ),
                       ),
@@ -384,14 +395,14 @@ class _HomeScreenState extends State<HomeScreen> {
     if (task.completed) return _success;
     if (task.importance == -1) {
       final dueDate = task.dueDate;
-      if (dueDate == null) return _textMuted;
+      if (dueDate == null) return _muted;
       final daysLeft = dueDate.difference(DateTime.now()).inDays;
       return context.read<SettingsProvider>().colorForDaysLeft(daysLeft);
     }
 
     switch (task.importance) {
       case 0:
-        return _primary;
+        return _homePrimary;
       case 1:
         return _success;
       case 2:
@@ -466,7 +477,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 fontFamily: _font,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: _textMuted,
+                color: _muted,
                 letterSpacing: 0.8,
               ),
             ),
@@ -477,7 +488,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   fontFamily: _font,
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
-                  color: _primary,
+                  color: _homePrimary,
                 ),
               ),
           ],
@@ -491,7 +502,7 @@ class _HomeScreenState extends State<HomeScreen> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 20),
             decoration: BoxDecoration(
-              color: _cardBg,
+              color: _surface,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Column(
@@ -504,7 +515,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     fontFamily: _font,
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: _textDark,
+                    color: _heading,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -513,7 +524,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: TextStyle(
                     fontFamily: _font,
                     fontSize: 13,
-                    color: _textMuted,
+                    color: _muted,
                   ),
                 ),
               ],
@@ -524,11 +535,13 @@ class _HomeScreenState extends State<HomeScreen> {
         if (pending.isNotEmpty)
           Container(
             decoration: BoxDecoration(
-              color: _cardBg,
+              color: _surface,
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
+                  color: Colors.black.withValues(
+                    alpha: _darkMode ? 0.22 : 0.04,
+                  ),
                   blurRadius: 10,
                   offset: const Offset(0, 2),
                 ),
@@ -571,7 +584,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     fontFamily: _font,
                                     fontSize: 15,
                                     fontWeight: FontWeight.w500,
-                                    color: _textDark,
+                                    color: _heading,
                                   ),
                                 ),
                               ),
@@ -606,7 +619,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           height: 1,
                           thickness: 0.5,
                           indent: 46,
-                          color: Colors.black.withValues(alpha: 0.06),
+                          color: Colors.black.withValues(
+                            alpha: _darkMode ? 0.16 : 0.06,
+                          ),
                         ),
                     ],
                   );
@@ -617,7 +632,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   Divider(
                     height: 1,
                     thickness: 0.5,
-                    color: Colors.black.withValues(alpha: 0.06),
+                    color: Colors.black.withValues(
+                      alpha: _darkMode ? 0.16 : 0.06,
+                    ),
                   ),
                   GestureDetector(
                     onTap: widget.onOpenTasks,
@@ -632,13 +649,13 @@ class _HomeScreenState extends State<HomeScreen> {
                               fontFamily: _font,
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: _primary,
+                              color: _homePrimary,
                             ),
                           ),
                           const SizedBox(width: 4),
                           Icon(
                             Icons.chevron_right_rounded,
-                            color: _primary,
+                            color: _homePrimary,
                             size: 18,
                           ),
                         ],
