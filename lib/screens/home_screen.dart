@@ -2,9 +2,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:optitime/models/task_model.dart';
 import 'package:optitime/providers/settings_provider.dart';
 import 'package:optitime/providers/task_provider.dart';
+import 'package:optitime/widgets/app_top_bar.dart';
 import 'create_task_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -18,6 +20,10 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  static const String _notePrefsKey = 'home_note_text';
+
+  final TextEditingController _noteController = TextEditingController();
+
   // ── Paleta: Azul claro, estilo iOS ────────────────────────────────────────
   static const Color _primary = Color(0xFF3B82F6); // azul claro principal
   static const Color _bgPage = Color(0xFFF2F6FF); // fondo muy suave
@@ -37,6 +43,41 @@ class _HomeScreenState extends State<HomeScreen> {
   Color get _heading => _darkMode ? const Color(0xFFE5E7EB) : _textDark;
   Color get _muted => _darkMode ? const Color(0xFF94A3B8) : _textMuted;
   Color get _homePrimary => _darkMode ? const Color(0xFF60A5FA) : _primary;
+  Color get _noteBg =>
+      _darkMode ? const Color(0xFF3B2F16) : const Color(0xFFFFF7CC);
+  Color get _noteLine =>
+      _darkMode ? const Color(0xFF8B6F2D) : const Color(0xFFE7D887);
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNote();
+  }
+
+  @override
+  void dispose() {
+    _noteController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadNote() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    _noteController.text = prefs.getString(_notePrefsKey) ?? '';
+    setState(() {});
+  }
+
+  Future<void> _saveNote(String note) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_notePrefsKey, note);
+  }
+
+  Future<void> _clearNote() async {
+    _noteController.clear();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_notePrefsKey);
+    if (mounted) setState(() {});
+  }
 
   // ── Build ──────────────────────────────────────────────────────────────────
   @override
@@ -58,6 +99,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 24),
                     _buildNextTaskCard(),
                     const SizedBox(height: 24),
+                    _buildNotesWidget(),
+                    const SizedBox(height: 24),
                     _buildTodayTasks(),
                     const SizedBox(height: 32),
                   ],
@@ -67,64 +110,26 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _openCreateTask,
-        backgroundColor: _homePrimary,
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
-        child: const Icon(Icons.add, color: Colors.white, size: 28),
+      floatingActionButton: SizedBox(
+        width: 64,
+        height: 64,
+        child: FloatingActionButton(
+          onPressed: _openCreateTask,
+          backgroundColor: _homePrimary,
+          elevation: 3,
+          shape: const CircleBorder(),
+          child: const Icon(Icons.add, color: Colors.white, size: 32),
+        ),
       ),
     );
   }
 
   // ── AppBar ─────────────────────────────────────────────────────────────────
   Widget _buildAppBar() {
-    final now = DateTime.now();
-    final days = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-    final months = [
-      'Ene',
-      'Feb',
-      'Mar',
-      'Abr',
-      'May',
-      'Jun',
-      'Jul',
-      'Ago',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dic',
-    ];
-    final dateStr =
-        '${days[now.weekday - 1]} ${now.day} ${months[now.month - 1]}';
-
-    return Container(
-      color: _pageBg,
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            'OptiTime',
-            style: TextStyle(
-              fontFamily: _font,
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: _homePrimary,
-              letterSpacing: -0.3,
-            ),
-          ),
-          Text(
-            dateStr,
-            style: TextStyle(
-              fontFamily: _font,
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              color: _muted,
-            ),
-          ),
-        ],
-      ),
+    return AppTopBar(
+      backgroundColor: _pageBg,
+      primaryColor: _homePrimary,
+      mutedColor: _muted,
     );
   }
 
@@ -459,6 +464,88 @@ class _HomeScreenState extends State<HomeScreen> {
     return '¡Buenas noches!';
   }
 
+  Widget _buildNotesWidget() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'NOTA RÁPIDA',
+              style: TextStyle(
+                fontFamily: _font,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: _muted,
+                letterSpacing: 0.8,
+              ),
+            ),
+            if (_noteController.text.trim().isNotEmpty)
+              GestureDetector(
+                onTap: _clearNote,
+                child: Icon(Icons.delete_outline, color: _muted, size: 20),
+              ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Container(
+          width: double.infinity,
+          constraints: const BoxConstraints(minHeight: 150),
+          padding: const EdgeInsets.fromLTRB(18, 14, 18, 16),
+          decoration: BoxDecoration(
+            color: _noteBg,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: _noteLine),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: _darkMode ? 0.24 : 0.06),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: _NoteLinesPainter(color: _noteLine),
+                ),
+              ),
+              TextField(
+                controller: _noteController,
+                onChanged: (value) {
+                  _saveNote(value);
+                  setState(() {});
+                },
+                minLines: 5,
+                maxLines: null,
+                keyboardType: TextInputType.multiline,
+                style: TextStyle(
+                  fontFamily: _font,
+                  fontSize: 15,
+                  height: 1.87,
+                  color: _darkMode ? const Color(0xFFFDE68A) : _textDark,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Escribe una nota...',
+                  hintStyle: TextStyle(
+                    fontFamily: _font,
+                    color: _darkMode
+                        ? const Color(0xFFD6B85D)
+                        : const Color(0xFF9A8A4B),
+                  ),
+                  border: InputBorder.none,
+                  isCollapsed: true,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildTodayTasks() {
     final pending = _pendingTasks(context.watch<TaskProvider>().tasks);
     final visible = pending.take(_taskPreviewLimit).toList();
@@ -668,5 +755,28 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
       ],
     );
+  }
+}
+
+class _NoteLinesPainter extends CustomPainter {
+  final Color color;
+
+  const _NoteLinesPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color.withValues(alpha: 0.55)
+      ..strokeWidth = 1;
+
+    const lineHeight = 28.0;
+    for (double y = lineHeight; y < size.height; y += lineHeight) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _NoteLinesPainter oldDelegate) {
+    return oldDelegate.color != color;
   }
 }

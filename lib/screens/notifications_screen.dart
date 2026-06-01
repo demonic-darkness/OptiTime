@@ -7,6 +7,7 @@ import 'package:optitime/models/task_model.dart';
 import 'package:optitime/providers/app_notification_provider.dart';
 import 'package:optitime/providers/settings_provider.dart';
 import 'package:optitime/providers/task_provider.dart';
+import 'package:optitime/widgets/app_top_bar.dart';
 import 'create_task_screen.dart';
 
 class NotificationsScreen extends StatelessWidget {
@@ -18,7 +19,6 @@ class NotificationsScreen extends StatelessWidget {
   static const Color _textMuted = Color(0xFF64748B);
   static const Color _darkPage = Color(0xFF0F172A);
   static const Color _darkCard = Color(0xFF1E293B);
-  static const Color _darkHeader = Color(0xFF111827);
   static const Color _darkText = Color(0xFFE5E7EB);
   static const Color _darkMuted = Color(0xFF94A3B8);
   static const Color _darkPrimary = Color(0xFF93C5FD);
@@ -64,56 +64,10 @@ class NotificationsScreen extends StatelessWidget {
   }
 
   Widget _buildAppBar(bool isDark) {
-    final now = DateTime.now();
-    final days = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'];
-    final months = [
-      'Ene',
-      'Feb',
-      'Mar',
-      'Abr',
-      'May',
-      'Jun',
-      'Jul',
-      'Ago',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dic',
-    ];
-    final dateStr =
-        '${days[now.weekday - 1]} ${now.day}, ${months[now.month - 1]}';
-
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? _darkHeader : const Color(0xFFE0E7FF),
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(24),
-          bottomRight: Radius.circular(24),
-        ),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            'Notificaciones',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: isDark ? _darkPrimary : _primary,
-              letterSpacing: 0,
-            ),
-          ),
-          Text(
-            dateStr,
-            style: TextStyle(
-              fontSize: 13,
-              color: isDark ? _darkMuted : _textMuted,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
+    return AppTopBar(
+      backgroundColor: isDark ? _darkPage : _bgPage,
+      primaryColor: isDark ? _darkPrimary : _primary,
+      mutedColor: isDark ? _darkMuted : _textMuted,
     );
   }
 

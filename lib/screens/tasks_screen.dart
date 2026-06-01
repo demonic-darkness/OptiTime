@@ -8,8 +8,17 @@ import 'package:optitime/models/task_model.dart';
 import 'create_task_screen.dart';
 import 'package:optitime/providers/settings_provider.dart';
 import 'package:optitime/providers/task_type_provider.dart';
+import 'package:optitime/widgets/app_top_bar.dart';
 
-enum _TaskFilterKind { none, type, exactDate, untilDate, color, overdue }
+enum _TaskFilterKind {
+  none,
+  type,
+  exactDate,
+  untilDate,
+  color,
+  overdue,
+  completed,
+}
 
 class TasksScreen extends StatefulWidget {
   const TasksScreen({super.key});
@@ -78,6 +87,7 @@ class _TasksScreenState extends State<TasksScreen> {
 
   // ── Helpers de fecha/sección ───────────────────────────────────────────────
   String _getSection(Task task) {
+    if (task.completed) return 'Completadas';
     if (task.dueDate == null) return 'Sin fecha';
     final now = DateTime.now();
     final due = task.dueDate!;
@@ -158,6 +168,11 @@ class _TasksScreenState extends State<TasksScreen> {
           query.isEmpty || task.title.toLowerCase().contains(query);
       if (!matchesSearch) return false;
 
+      if (_activeFilter == _TaskFilterKind.completed) {
+        return task.completed;
+      }
+      if (task.completed) return false;
+
       final overdue = _isOverdue(task);
       if (_activeFilter != _TaskFilterKind.overdue && overdue) return false;
 
@@ -180,6 +195,8 @@ class _TasksScreenState extends State<TasksScreen> {
           return _matchesColorFilter(task);
         case _TaskFilterKind.overdue:
           return overdue;
+        case _TaskFilterKind.completed:
+          return task.completed;
       }
     }).toList();
   }
@@ -192,6 +209,7 @@ class _TasksScreenState extends State<TasksScreen> {
       'Esta semana',
       'Próximamente',
       'Sin fecha',
+      'Completadas',
     ];
     final present = tasks.map((t) => _getSection(t)).toSet();
     return order.where((s) => present.contains(s)).toList();
@@ -219,6 +237,8 @@ class _TasksScreenState extends State<TasksScreen> {
         return c['label'] as String;
       case _TaskFilterKind.overdue:
         return 'Vencidas';
+      case _TaskFilterKind.completed:
+        return 'Completadas';
     }
   }
 
@@ -320,66 +340,29 @@ class _TasksScreenState extends State<TasksScreen> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const CreateTaskScreen()),
+      floatingActionButton: SizedBox(
+        width: 64,
+        height: 64,
+        child: FloatingActionButton(
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const CreateTaskScreen()),
+          ),
+          backgroundColor: _accent,
+          elevation: 3,
+          shape: const CircleBorder(),
+          child: const Icon(Icons.add, color: Colors.white, size: 32),
         ),
-        backgroundColor: _accent,
-        elevation: 2,
-        child: const Icon(Icons.add, color: Colors.white, size: 28),
       ),
     );
   }
 
   // ── AppBar ─────────────────────────────────────────────────────────────────
   Widget _buildAppBar() {
-    final now = DateTime.now();
-    final days = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-    final months = [
-      'Ene',
-      'Feb',
-      'Mar',
-      'Abr',
-      'May',
-      'Jun',
-      'Jul',
-      'Ago',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dic',
-    ];
-    final dateStr =
-        '${days[now.weekday - 1]} ${now.day} ${months[now.month - 1]}';
-
-    return Container(
-      color: _pageBg,
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            'OptiTime',
-            style: TextStyle(
-              fontFamily: _font,
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: _accent,
-              letterSpacing: -0.3,
-            ),
-          ),
-          Text(
-            dateStr,
-            style: TextStyle(
-              fontFamily: _font,
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              color: _muted,
-            ),
-          ),
-        ],
-      ),
+    return AppTopBar(
+      backgroundColor: _pageBg,
+      primaryColor: _accent,
+      mutedColor: _muted,
     );
   }
 
@@ -575,6 +558,18 @@ class _TasksScreenState extends State<TasksScreen> {
                 selected: _activeFilter == _TaskFilterKind.overdue,
                 onTap: () => setState(() {
                   _activeFilter = _TaskFilterKind.overdue;
+                  _selectedTypeFilter = null;
+                  _selectedDateFilter = null;
+                  _selectedImportanceFilter = null;
+                  _showFilters = false;
+                }),
+              ),
+              _buildFilterChip(
+                label: 'Completadas',
+                icon: Icons.check_circle_outline,
+                selected: _activeFilter == _TaskFilterKind.completed,
+                onTap: () => setState(() {
+                  _activeFilter = _TaskFilterKind.completed;
                   _selectedTypeFilter = null;
                   _selectedDateFilter = null;
                   _selectedImportanceFilter = null;
@@ -823,6 +818,7 @@ class _TasksScreenState extends State<TasksScreen> {
             .where((t) => _getSection(t) == section)
             .toList();
         final isOverdueSection = section == 'Vencidas';
+        final isCompletedSection = section == 'Completadas';
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -830,8 +826,14 @@ class _TasksScreenState extends State<TasksScreen> {
               padding: const EdgeInsets.only(bottom: 10),
               child: Row(
                 children: [
-                  if (isOverdueSection) ...[
-                    Icon(Icons.warning_amber_rounded, color: _danger, size: 15),
+                  if (isOverdueSection || isCompletedSection) ...[
+                    Icon(
+                      isCompletedSection
+                          ? Icons.check_circle_outline
+                          : Icons.warning_amber_rounded,
+                      color: isCompletedSection ? _success : _danger,
+                      size: 15,
+                    ),
                     const SizedBox(width: 5),
                   ],
                   Text(
@@ -840,7 +842,9 @@ class _TasksScreenState extends State<TasksScreen> {
                       fontFamily: _font,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: isOverdueSection ? _danger : _muted,
+                      color: isCompletedSection
+                          ? _success
+                          : (isOverdueSection ? _danger : _muted),
                       letterSpacing: 0.8,
                     ),
                   ),
@@ -873,6 +877,24 @@ class _TasksScreenState extends State<TasksScreen> {
       ),
       child: Row(
         children: [
+          SizedBox(
+            width: 28,
+            height: 28,
+            child: Checkbox(
+              value: task.completed,
+              onChanged: (_) =>
+                  context.read<TaskProvider>().toggleComplete(task.id),
+              activeColor: Colors.white,
+              checkColor: color,
+              side: const BorderSide(color: Colors.white, width: 1.8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(6),
+              ),
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              visualDensity: VisualDensity.compact,
+            ),
+          ),
+          const SizedBox(width: 10),
           Container(
             width: 38,
             height: 38,
@@ -897,6 +919,10 @@ class _TasksScreenState extends State<TasksScreen> {
                     fontWeight: FontWeight.w700,
                     fontSize: 15,
                     letterSpacing: -0.2,
+                    decoration: task.completed
+                        ? TextDecoration.lineThrough
+                        : TextDecoration.none,
+                    decorationColor: Colors.white,
                   ),
                 ),
                 const SizedBox(height: 3),

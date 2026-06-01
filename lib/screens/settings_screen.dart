@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:optitime/providers/settings_provider.dart';
 import 'package:optitime/screens/color_settings_screen.dart';
+import 'package:optitime/widgets/app_top_bar.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -38,8 +39,6 @@ class SettingsScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildTitle(isDark),
-                    const SizedBox(height: 20),
                     _buildColorSection(context, isDark),
                     const SizedBox(height: 28),
                     _buildSwitchSection(context, settings, isDark),
@@ -57,33 +56,10 @@ class SettingsScreen extends StatelessWidget {
   // ── Widgets ───────────────────────────────────────────────────────────────
 
   Widget _buildAppBar(bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            'OptiTime',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: isDark ? _darkPrimary : _lightPrimary,
-              letterSpacing: 1.2,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTitle(bool isDark) {
-    return Text(
-      'Configuracion',
-      style: TextStyle(
-        fontSize: 32,
-        fontWeight: FontWeight.w900,
-        color: isDark ? _darkText : _lightText,
-      ),
+    return AppTopBar(
+      backgroundColor: isDark ? _darkPage : _lightPage,
+      primaryColor: isDark ? _darkPrimary : _lightPrimary,
+      mutedColor: isDark ? _darkMuted : const Color(0xFF8E8E93),
     );
   }
 
