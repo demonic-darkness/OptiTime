@@ -13,7 +13,7 @@ import 'create_task_screen.dart';
 class NotificationsScreen extends StatelessWidget {
   const NotificationsScreen({super.key});
 
-  static const Color _primary = Color(0xFF4F46E5);
+  static const Color _primary = Color(0xFF3B82F6);
   static const Color _bgPage = Color(0xFFF1F5F9);
   static const Color _textDark = Color(0xFF0F172A);
   static const Color _textMuted = Color(0xFF64748B);
@@ -21,7 +21,7 @@ class NotificationsScreen extends StatelessWidget {
   static const Color _darkCard = Color(0xFF1E293B);
   static const Color _darkText = Color(0xFFE5E7EB);
   static const Color _darkMuted = Color(0xFF94A3B8);
-  static const Color _darkPrimary = Color(0xFF93C5FD);
+  static const Color _darkPrimary = Color(0xFF60A5FA);
 
   @override
   Widget build(BuildContext context) {

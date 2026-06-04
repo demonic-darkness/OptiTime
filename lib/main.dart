@@ -49,7 +49,7 @@ class OptiTimeApp extends StatelessWidget {
   const OptiTimeApp({super.key});
 
   // Color principal de la aplicación.
-  static const Color _primary = Color(0xFF4F46E5);
+  static const Color _primary = Color(0xFF3B82F6);
 
   @override
   Widget build(BuildContext context) {
@@ -121,7 +121,7 @@ class _MainNavigatorState extends State<MainNavigator> {
   bool _notificationSyncQueued = false; // Evita sincronizaciones duplicadas.
 
   // ── Colores usados en la barra de navegación ──────────────────────────────
-  static const Color _primary = Color(0xFF4F46E5);
+  static const Color _primary = Color(0xFF3B82F6);
   static const Color _navInactive = Color(0xFFBDBDBD);
 
   late final List<Widget> _screens;
@@ -187,7 +187,7 @@ class _MainNavigatorState extends State<MainNavigator> {
     final selectedBackground = darkMode
         ? const Color(0xFF60A5FA).withValues(alpha: 0.18)
         : _primary.withValues(alpha: 0.12);
-    final selectedColor = darkMode ? const Color(0xFF93C5FD) : _primary;
+    final selectedColor = darkMode ? const Color(0xFF60A5FA) : _primary;
     final inactiveColor = darkMode ? const Color(0xFF64748B) : _navInactive;
 
     final icons = [
@@ -197,7 +197,13 @@ class _MainNavigatorState extends State<MainNavigator> {
       Icons.notifications_outlined,
       Icons.settings_outlined,
     ];
-    final labels = ['Calendario', 'Tareas', 'Inicio', 'Notificaciones', 'Ajustes'];
+    final labels = [
+      'Calendario',
+      'Tareas',
+      'Inicio',
+      'Notificaciones',
+      'Ajustes',
+    ];
 
     return Container(
       height: 78,

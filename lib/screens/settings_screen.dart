@@ -13,8 +13,8 @@ class SettingsScreen extends StatelessWidget {
   static const Color _darkPage = Color(0xFF0F172A);
   static const Color _lightCard = Colors.white;
   static const Color _darkCard = Color(0xFF1E293B);
-  static const Color _lightPrimary = Color(0xFF3A3A9F);
-  static const Color _darkPrimary = Color(0xFF93C5FD);
+  static const Color _lightPrimary = Color(0xFF3B82F6);
+  static const Color _darkPrimary = Color(0xFF60A5FA);
   static const Color _lightText = Color(0xFF1A1A2E);
   static const Color _darkText = Color(0xFFE5E7EB);
   static const Color _darkMuted = Color(0xFF94A3B8);

@@ -860,118 +860,120 @@ class _TasksScreenState extends State<TasksScreen> {
   }
 
   Widget _buildTaskCard(Task task) {
-    final color = _taskColor(task);
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: _isDark ? 0.34 : 0.25),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+    final taskColor = _taskColor(task);
+    final isCompleted = task.completed;
+    final cardColor = isCompleted ? _surface : taskColor;
+    final mainTextColor = isCompleted ? _heading : Colors.white;
+    final secondaryTextColor = isCompleted
+        ? _muted
+        : Colors.white.withValues(alpha: 0.85);
+    final iconBackground = isCompleted
+        ? _surfaceAlt
+        : Colors.white.withValues(alpha: 0.2);
+    final iconColor = isCompleted ? _muted : Colors.white;
+    final shadowColor = isCompleted
+        ? Colors.black.withValues(alpha: _isDark ? 0.24 : 0.08)
+        : taskColor.withValues(alpha: _isDark ? 0.34 : 0.25);
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => CreateTaskScreen(task: task)),
       ),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 28,
-            height: 28,
-            child: Checkbox(
-              value: task.completed,
-              onChanged: (_) =>
-                  context.read<TaskProvider>().toggleComplete(task.id),
-              activeColor: Colors.white,
-              checkColor: color,
-              side: const BorderSide(color: Colors.white, width: 1.8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(6),
-              ),
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              visualDensity: VisualDensity.compact,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: cardColor,
+          borderRadius: BorderRadius.circular(18),
+          border: isCompleted ? Border.all(color: _softBorder) : null,
+          boxShadow: [
+            BoxShadow(
+              color: shadowColor,
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
-          ),
-          const SizedBox(width: 10),
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(_typeIcon(task.type), color: Colors.white, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  task.title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontFamily: _font,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15,
-                    letterSpacing: -0.2,
-                    decoration: task.completed
-                        ? TextDecoration.lineThrough
-                        : TextDecoration.none,
-                    decorationColor: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.access_time_rounded,
-                      color: Colors.white.withValues(alpha: 0.7),
-                      size: 12,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      _dueDisplayText(task),
-                      style: TextStyle(
-                        fontFamily: _font,
-                        color: Colors.white.withValues(alpha: 0.85),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 10),
-          GestureDetector(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => CreateTaskScreen(task: task)),
-            ),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
+                color: iconBackground,
+                shape: BoxShape.circle,
               ),
-              child: Text(
-                'Ver',
-                style: TextStyle(
-                  fontFamily: _font,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: color,
-                ),
+              child: Icon(_typeIcon(task.type), color: iconColor, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    task.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontFamily: _font,
+                      color: mainTextColor,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                      letterSpacing: -0.2,
+                      decoration: isCompleted
+                          ? TextDecoration.lineThrough
+                          : TextDecoration.none,
+                      decorationColor: mainTextColor,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.access_time_rounded,
+                        color: secondaryTextColor,
+                        size: 12,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _dueDisplayText(task),
+                        style: TextStyle(
+                          fontFamily: _font,
+                          color: secondaryTextColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
-          ),
-        ],
+            const SizedBox(width: 12),
+            SizedBox(
+              width: 32,
+              height: 32,
+              child: Checkbox(
+                value: isCompleted,
+                onChanged: (_) =>
+                    context.read<TaskProvider>().toggleComplete(task.id),
+                activeColor: isCompleted ? _success : Colors.white,
+                checkColor: isCompleted ? Colors.white : taskColor,
+                side: BorderSide(
+                  color: isCompleted ? _success : Colors.white,
+                  width: 1.8,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(7),
+                ),
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
