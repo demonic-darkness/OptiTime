@@ -609,47 +609,59 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
           spacing: 10,
           runSpacing: 12,
           children: _importanceLevels.map((level) {
-            final value = level['value'] as int;
-            final color = level['color'] as Color;
-            final selected = _selectedImportance == value;
-            return GestureDetector(
-              onTap: () => setState(() => _selectedImportance = value),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 160),
-                width: value == -1 ? 76 : 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  color: selected ? color : _surfaceAlt,
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(
-                    color: selected ? color : _border,
-                    width: selected ? 2 : 1,
-                  ),
-                  boxShadow: selected
-                      ? [
-                          BoxShadow(
-                            color: color.withValues(alpha: 0.28),
-                            blurRadius: 8,
-                            offset: const Offset(0, 3),
-                          ),
-                        ]
-                      : [],
-                ),
-                child: Center(
-                  child: Text(
-                    level['label'] as String,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: _font,
-                      color: selected ? Colors.white : _heading,
-                      fontSize: value == -1 ? 12 : 15,
-                      fontWeight: FontWeight.w800,
+              final value = level['value'] as int;
+              final color = level['color'] as Color;
+              final selected = _selectedImportance == value;
+
+              // Non-auto items: show colored circles without numbers.
+              final bgColor = value == -1
+                  ? (selected ? color : _surfaceAlt)
+                  : (selected ? color : color.withOpacity(0.22));
+
+              final borderColor = value == -1
+                  ? (selected ? color : _border)
+                  : (selected ? color : color.withOpacity(0.45));
+
+              return GestureDetector(
+                onTap: () => setState(() => _selectedImportance = value),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 160),
+                  width: value == -1 ? 76 : 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    color: bgColor,
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(
+                      color: borderColor,
+                      width: selected ? 2 : 1,
                     ),
+                    boxShadow: selected
+                        ? [
+                            BoxShadow(
+                              color: color.withOpacity(0.28),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ]
+                        : [],
+                  ),
+                  child: Center(
+                    child: value == -1
+                        ? Text(
+                            level['label'] as String,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontFamily: _font,
+                              color: selected ? Colors.white : _heading,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          )
+                        : const SizedBox.shrink(),
                   ),
                 ),
-              ),
-            );
-          }).toList(),
+              );
+            }).toList(),
         ),
       ],
     );
