@@ -116,7 +116,7 @@ class MainNavigator extends StatefulWidget {
 }
 
 class _MainNavigatorState extends State<MainNavigator> {
-  int _selectedIndex = 2; // Inicia en la pestaña "Inicio".
+  int _selectedIndex = 1; // Inicia en la pestaña "Inicio".
   bool _startedNotificationSync = false; // Controla arranque único.
   bool _notificationSyncQueued = false; // Evita sincronizaciones duplicadas.
 
@@ -131,14 +131,13 @@ class _MainNavigatorState extends State<MainNavigator> {
     super.initState();
     // Lista de pantallas que se muestran según el índice seleccionado.
     _screens = [
-      const Placeholder(), // 0 - Calendario (por implementar)
-      const TasksScreen(), // 1 - Tareas
+      const TasksScreen(), // 0 - Tareas
       HomeScreen(
-        onOpenTasks: () => setState(() => _selectedIndex = 1),
-        onOpenNotifications: () => setState(() => _selectedIndex = 3),
-      ), // 2 - Inicio
-      const NotificationsScreen(), // 3 - Notificaciones
-      const SettingsScreen(), // 4 - Ajustes
+        onOpenTasks: () => setState(() => _selectedIndex = 0),
+        onOpenNotifications: () => setState(() => _selectedIndex = 2),
+      ), // 1 - Inicio
+      const NotificationsScreen(), // 2 - Notificaciones
+      const SettingsScreen(), // 3 - Ajustes
     ];
   }
 
@@ -191,14 +190,12 @@ class _MainNavigatorState extends State<MainNavigator> {
     final inactiveColor = darkMode ? const Color(0xFF64748B) : _navInactive;
 
     final icons = [
-      Icons.calendar_today_outlined,
       Icons.check_circle_outline,
       Icons.home_rounded,
       Icons.notifications_outlined,
       Icons.settings_outlined,
     ];
     final labels = [
-      'Calendario',
       'Tareas',
       'Inicio',
       'Notificaciones',
